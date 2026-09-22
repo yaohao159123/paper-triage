@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"cd ~/Projects/paper-triage && git log --oneline | head -5 && echo --- && find . -path ./node_modules -prune -o -type f \\\\( -name \\\"*.js\\\" -o -name \\\"*.css\\\" -o -name \\\"*.json\\\" -o -name \\\"...",
-  "error": "Exit code 1\nc8933f1 fix: 0.4.5 — self-healing masonry (watch site re-layouts, computed positions), singles immune to filters, strict follow-only on feeds, diagnostics copy\n11507d1 style: 0.4.4 — compact toolbar (11px, tighter spacing, idle 72% opacity)\n8c4ae5a fix: 0.4.3 — collapse hides quoted tweets, article/link cards and caps height on X\n50b0bb0 fix: 0.4.2 — state via data-* attributes (React rewrites className on X), policy-versioned cache namespaces\n630edde fix: 0.4.1 — hide the X virtual-...",
-  "timestamp": "2026-09-22T17:51:03.134Z",
-  "retry_count": 1
-}

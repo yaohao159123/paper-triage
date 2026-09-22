@@ -1,6 +1,6 @@
 {
   "name": "paper-triage",
-  "version": "0.1.0",
+  "version": "0.4.6",
   "private": true,
   "type": "module",
   "description": "Chrome extension: Jev-powered 关注/普通/跳过 badges on literature list pages",
