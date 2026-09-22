@@ -132,3 +132,31 @@ test('x: timeline tweets with ids, author, quoted text; media-only tweets skippe
   assert.doesNotMatch(c.paper.abstract, /Quoted:/, 'main text excludes the quoted tweet');
   assert.equal(tweetText(doc.querySelector('[data-testid="tweetText"]')).length > 50, true);
 });
+
+test('xhs: feed cards with note ids, titles, authors; untitled cards skipped; note modal adds a single full-body entry', async () => {
+  const { xhsAdapter } = await import('../src/content/adapters/xhs.js');
+  assert.equal(pickAdapter(new URL('https://www.xiaohongshu.com/explore')).id, 'xhs');
+  assert.equal(pickAdapter(new URL('https://www.xiaohongshu.com/explore')).domain, 'xhs');
+  assert.equal(pickAdapter(new URL('https://www.xiaohongshu.com/explore')).defaultSkipMode, 'hide');
+  const doc = fixture('xhs-explore.html', 'https://www.xiaohongshu.com/explore');
+  const entries = xhsAdapter.findEntries(doc);
+  assert.equal(entries.length, 6, 'untitled card ignored');
+  const [a, b] = entries;
+  assert.equal(a.paper.postId, '6a6e9c560000000025007b15');
+  assert.equal(a.paper.title, '合租室友请保持适当的距离好吗');
+  assert.equal(a.paper.authors, 'ICQ小可乐');
+  assert.equal(a.paper.url, 'https://www.xiaohongshu.com/explore/6a6e9c560000000025007b15');
+  assert.ok(a.mount.classList.contains('footer'), 'badge mounts in the footer, outside the title link');
+  assert.equal(a.containers[0].tagName, 'SECTION');
+  assert.match(b.paper.title, /Claude Code 保姆级教程/);
+  const note = fixture('xhs-note.html', 'https://www.xiaohongshu.com/explore/6a85231600000000050283d8?xsec_token=AB2');
+  const ne = xhsAdapter.findEntries(note);
+  assert.equal(ne.length, 2, 'modal entry + the feed card behind it');
+  assert.equal(ne[0].single, true);
+  assert.equal(ne[0].noGray, true);
+  assert.equal(ne[0].paper.postId, '6a85231600000000050283d8');
+  assert.match(ne[0].paper.abstract, /^第一步 npm/);
+  assert.equal(ne[0].paper.abstractFull, true);
+  assert.equal(ne[0].paper.authors, 'AI工程笔记');
+  assert.equal(ne[0].mount.id, 'detail-title');
+});

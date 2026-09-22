@@ -55,3 +55,18 @@ test('tweet domain: reader profile + tweets state, same answer ids as papers so 
   assert.equal(DOMAINS.tweet.chip, '推广');
   assert.equal(tweets[0].key, 'tweet:1');
 });
+
+test('xhs domain: reader + posts state (title, optional body/author), 5 questions per post, 广告 chip', async () => {
+  const { buildXhsState, buildXhsQuestions, DOMAINS, XHS_LEVELS } = await import('../src/shared/questions.js');
+  const { DEFAULT_XHS_PROFILE } = await import('../src/shared/profile.js');
+  const posts = [normalizePaper({ title: '标题', authors: '作者', postId: 'abc', source: 'xhs' }), normalizePaper({ title: '标题2', abstract: '正文', postId: 'def', source: 'xhs' })];
+  const state = buildXhsState(DEFAULT_XHS_PROFILE, posts);
+  assert.deepEqual(Object.keys(state), ['reader', 'posts']);
+  assert.deepEqual(state.posts[0], { title: '标题', author: '作者' });
+  assert.deepEqual(state.posts[1], { title: '标题2', body: '正文' });
+  assert.equal(posts[0].key, 'xhs:abc');
+  const q = buildXhsQuestions(1);
+  assert.deepEqual(Object.keys(q), ['paper_0_priority', 'paper_0_review', 'paper_0_interest', 'paper_0_educational', 'paper_0_concrete']);
+  assert.equal(q.paper_0_priority.criteria, XHS_LEVELS);
+  assert.equal(DOMAINS.xhs.chip, '广告');
+});

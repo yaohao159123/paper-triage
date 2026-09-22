@@ -154,3 +154,74 @@ export function reasonLabels(domain) {
   const r = (DOMAINS[domain] || DOMAINS.paper).reasons;
   return Object.fromEntries(Object.entries(r).map(([k, v]) => [k, v.zh]));
 }
+
+/* ---------- Xiaohongshu posts: judged from title (+ author, + body on the note page) ---------- */
+import { xhsProfileForState } from './profile.js';
+
+export const XHS_LEVELS = [
+  // level 0 -> 跳过（屏蔽）
+  'Hide: not learning content, or learning content clearly outside reader.interests. Lifestyle, shopping, fashion, food, travel, dating, entertainment, memes, ads, or vague motivational posts with nothing to learn.',
+  // level 1 -> 普通
+  'Normal: learning-oriented but weak: generic study tips, a topic only loosely related to reader.interests, or a title that promises knowledge without indicating any concrete content.',
+  // level 2 -> 关注
+  'Learn: educational content on one of reader.interests with something concrete to learn: a tutorial, an explanation of a concept or tool, a step-by-step method, notes on a paper or course, a comparison with specifics. The reader would open it to study.',
+];
+
+export function xhsInstructions(i) {
+  return {
+    question: `Is \`posts[${i}]\` learning content the reader described in \`reader\` should open?`,
+    how_to_judge:
+      `Judge from \`posts[${i}].title\` and, when present, \`posts[${i}].body\` and \`posts[${i}].author\`. The title is often the only text; read it literally and infer the post's topic from it. ` +
+      'Titles are mostly in Chinese; understand them as written. Compare the topic with reader.interests and reader.noise. Emojis and clickbait wording do not change the topic.',
+  };
+}
+
+export function xhsAdInstructions(i) {
+  return `Is \`posts[${i}]\` mainly promotional: selling a course, product or service, a shopping recommendation, an affiliate or discount post, or a brand advertisement?`;
+}
+
+export const XHS_REASONS = {
+  interest: {
+    zh: '主题',
+    instructions: (i) => `Is the topic of \`posts[${i}]\` one of \`reader.interests\`?`,
+    criteria: { true: 'The post is about one of the listed interests.', false: 'The post is about something else.' },
+  },
+  educational: {
+    zh: '教学',
+    instructions: (i) => `Is \`posts[${i}]\` educational in form: it teaches, explains, demonstrates, or summarises something (tutorial, how-to, notes, explanation, comparison)?`,
+    criteria: { true: 'The post exists to teach or explain.', false: 'The post shares a mood, a look, a purchase, an opinion, or entertainment.' },
+  },
+  concrete: {
+    zh: '干货',
+    instructions: (i) => `Does the title or body of \`posts[${i}]\` indicate concrete content: a named tool, technique, step, number, resource, or specific result, rather than a vague promise?`,
+    criteria: { true: 'Specific, checkable content is indicated.', false: 'Only vague or hype wording.' },
+  },
+};
+
+export function postForState(p) {
+  const out = { title: p.title };
+  if (p.abstract && p.abstract !== p.title) out.body = p.abstract;
+  if (p.authors) out.author = p.authors;
+  return out;
+}
+
+export function buildXhsState(profile, posts) {
+  return { reader: xhsProfileForState(profile), posts: posts.map(postForState) };
+}
+
+export function buildXhsQuestions(count, { reasons = true } = {}) {
+  const q = {};
+  for (let i = 0; i < count; i += 1) {
+    q[`paper_${i}_priority`] = { type: 'score', instructions: xhsInstructions(i), criteria: XHS_LEVELS };
+    q[`paper_${i}_review`] = {
+      type: 'noul',
+      instructions: xhsAdInstructions(i),
+      criteria: { true: 'Mainly promotional or commercial.', false: 'Mainly sharing knowledge or experience, even if it names products.' },
+    };
+    if (reasons) for (const [k, r] of Object.entries(XHS_REASONS)) q[`paper_${i}_${k}`] = { type: 'noul', instructions: r.instructions(i), criteria: r.criteria };
+  }
+  return q;
+}
+
+DOMAINS.xhs = { buildState: buildXhsState, buildQuestions: buildXhsQuestions, chip: '广告', chipTitle: 'Jev 认为这条主要是推广 / 带货内容', reasons: XHS_REASONS, promoIsNoise: true };
+DOMAINS.tweet.promoIsNoise = true;

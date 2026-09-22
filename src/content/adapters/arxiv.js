@@ -5,6 +5,7 @@ const ABS_ID = /\/abs\/(\d{4}\.\d{4,5})/;
 
 export const arxivAdapter = {
   id: 'arxiv',
+  domain: 'paper',
   matches: (loc) => /(^|\.)arxiv\.org$/.test(loc.hostname),
   findEntries(root) {
     const single = absEntry(root);

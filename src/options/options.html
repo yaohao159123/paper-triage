@@ -71,6 +71,20 @@
   </section>
 
   <section>
+    <h2>3b. 小红书画像 <span class="muted">（只看学习内容；英文；一行一条）</span></h2>
+    <label>读者概括 summary
+      <textarea id="x_summary" rows="3"></textarea>
+    </label>
+    <label>想学的主题 interests
+      <textarea id="x_interests" rows="6"></textarea>
+    </label>
+    <label>屏蔽的内容 noise <span class="muted">（命中即判「跳过」并隐藏）</span>
+      <textarea id="x_noise" rows="6"></textarea>
+    </label>
+    <div class="row"><button id="resetXhsProfile" type="button" class="ghost">恢复默认小红书画像</button></div>
+  </section>
+
+  <section>
     <h2>4. 显示方式 <span class="muted">（怎么隐藏没必要的、怎么突出必要的）</span></h2>
     <label>跳过的条目
       <select id="skipMode">
@@ -78,6 +92,7 @@
         <option value="dim">变灰但保留全部内容</option>
         <option value="hide">完全隐藏</option>
       </select>
+      <span class="muted">这是全局默认；小红书默认为「隐藏」（隐藏后自动重排瀑布流）。每个站点也可在页面工具条里单独选，选择会记住。</span>
     </label>
     <label class="check"><input id="followAccent" type="checkbox"> 「关注」条目加左侧绿色色条和淡底色</label>
     <label class="check"><input id="reasons" type="checkbox"> 在徽章旁显示命中维度（文献：课题 / 方法 / 材料；推文：主题 / 具体 / 来源）<span class="muted">（多 3 个 Jev 问题，成本约 +60%）</span></label>
@@ -90,7 +105,8 @@
     <div class="grid">
       <label>followMin <input id="followMin" type="number" min="0" max="1" step="0.05"></label>
       <label>skipMin <input id="skipMin" type="number" min="0" max="1" step="0.05"></label>
-      <label>每批文献数 <input id="batchSize" type="number" min="1" max="20" step="1"></label>
+      <label>每批条数 <input id="batchSize" type="number" min="1" max="20" step="1"></label>
+      <label>promoSkipMin <span class="muted">（推文 / 小红书：推广概率 ≥ 此值直接跳过）</span><input id="promoSkipMin" type="number" min="0" max="1" step="0.05"></label>
     </div>
   </section>
 

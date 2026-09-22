@@ -6,6 +6,7 @@ const DOI = /doi:\s*(10\.\d{4,9}\/[^\s.]+(?:\.[^\s.]+)*?)\.?(?:\s|$)/i;
 
 export const pubmedAdapter = {
   id: 'pubmed',
+  domain: 'paper',
   matches: (loc) => loc.hostname === 'pubmed.ncbi.nlm.nih.gov',
   findEntries(root) {
     const single = articleEntry(root);

@@ -4,7 +4,8 @@ import { pickAdapter } from './adapters/index.js';
 import { normalizePaper } from '../shared/paper.js';
 import { effectiveLabel, nextManualLabel, LABELS } from '../shared/policy.js';
 import { reasonLabels } from '../shared/questions.js';
-import { DEFAULT_DISPLAY } from '../shared/profile.js';
+import { DEFAULT_DISPLAY, skipModeFor } from '../shared/profile.js';
+import { relayoutMasonry, restoreMasonry } from './masonry.js';
 import { renderBadge, setDisabled, setSkipMode, countLabels, BADGE_CLASS } from './render.js';
 import { mountToolbar, jumpToNextFollow } from './toolbar.js';
 import { refreshRuns, toggleExpanded } from './collapse.js';
@@ -78,11 +79,13 @@ function setDisplay(patch) {
   send({ type: 'setSettings', patch: { display: next } });
 }
 
+const siteSkipMode = () => skipModeFor(display, adapter.id, adapter.defaultSkipMode);
+
 function applyDisplay(d) {
   display = { ...DEFAULT_DISPLAY, ...(d || {}) };
-  setSkipMode(document, display.skipMode);
+  setSkipMode(document, siteSkipMode());
   document.documentElement.classList.toggle('pt-no-accent', display.followAccent === false);
-  toolbar?.setSkipMode(display.skipMode);
+  toolbar?.setSkipMode(siteSkipMode());
   if (toolbar && toolbar.getSort() !== !!display.sortFollowFirst) toolbar.setSort(!!display.sortFollowFirst);
   afterLayout();
 }
@@ -109,10 +112,10 @@ async function scan(opts = {}) {
     if (!toolbar && entries.some((e) => !e.single)) {
       toolbar = mountToolbar(document, {
         onRerun: () => scan({ all: true, force: true }),
-        onSkipMode: (mode) => setDisplay({ skipMode: mode }),
+        onSkipMode: (mode) => setDisplay({ skipModes: { ...(display.skipModes || {}), [adapter.id]: mode } }),
         onFollowOnly: () => afterLayout(),
         onSort: (on) => setDisplay({ sortFollowFirst: on }),
-      }, { skipMode: display.skipMode, sortFollowFirst: display.sortFollowFirst, sortable: adapter.domain !== 'tweet' });
+      }, { skipMode: siteSkipMode(), sortFollowFirst: display.sortFollowFirst, sortable: (adapter.domain || 'paper') === 'paper' });
     }
     for (const e of entries) {
       renderBadge(e, { state: 'loading' });
@@ -169,10 +172,22 @@ function liveEntries() {
 /** Re-sort (if on), rebuild collapsed-run markers, refresh counts. */
 function afterLayout() {
   const entries = liveEntries().filter((e) => !e.single);
-  if (adapter.domain !== 'tweet' && entries.length) reorder(entries, display.sortFollowFirst ? 'follow-first' : 'original');
-  if (display.skipMode === 'collapse') refreshRuns(document, liveEntries().filter((e) => !e.single));
+  if ((adapter.domain || 'paper') === 'paper' && entries.length) reorder(entries, display.sortFollowFirst ? 'follow-first' : 'original');
+  if (siteSkipMode() === 'collapse') refreshRuns(document, liveEntries().filter((e) => !e.single));
   else refreshRuns(document, []);
+  relayoutIfMasonry();
   refreshToolbar();
+}
+
+/** 小红书 feed: after hiding cards, re-place the remaining ones so the grid has no holes. */
+function relayoutIfMasonry() {
+  if (!adapter.masonry) return;
+  const container = document.querySelector(adapter.masonry.container);
+  const cards = container ? [...container.querySelectorAll(adapter.masonry.cards)] : [];
+  if (!cards.length) return;
+  const hiding = siteSkipMode() === 'hide' || document.documentElement.classList.contains('pt-filter-follow');
+  if (hiding) relayoutMasonry(container, cards);
+  else restoreMasonry(container, cards);
 }
 
 function refreshToolbar() {
@@ -209,7 +224,7 @@ async function onBadgeClick(event) {
 function onDoubleClick(event) {
   if (event.target?.closest?.('a, button, input, textarea, .pt-toolbar')) return;
   const container = event.target?.closest?.('[data-pt-key].pt-skipped');
-  if (!container || display.skipMode !== 'collapse') return;
+  if (!container || siteSkipMode() !== 'collapse') return;
   const rec = (byKey.get(container.dataset.ptKey) || [])[0];
   if (!rec) return;
   event.preventDefault();
@@ -227,8 +242,8 @@ function onKey(e) {
   const k = e.key.toLowerCase();
   if (k === 'n') { e.preventDefault(); jumpToNextFollow(document); }
   else if (k === 'f' && toolbar) { e.preventDefault(); toolbar.setFollowOnly(!toolbar.getFollowOnly()); }
-  else if (k === 's' && toolbar && adapter.domain !== 'tweet') { e.preventDefault(); toolbar.setSort(!toolbar.getSort()); }
-  else if (k === 'h' && toolbar) { e.preventDefault(); setDisplay({ skipMode: display.skipMode === 'hide' ? 'collapse' : 'hide' }); }
+  else if (k === 's' && toolbar && (adapter.domain || 'paper') === 'paper') { e.preventDefault(); toolbar.setSort(!toolbar.getSort()); }
+  else if (k === 'h' && toolbar) { e.preventDefault(); const next = siteSkipMode() === 'hide' ? 'collapse' : 'hide'; setDisplay({ skipModes: { ...(display.skipModes || {}), [adapter.id]: next } }); }
 }
 
 /** Markdown list of the page's papers whose effective label is in `labels`, in page order. */

@@ -1,4 +1,5 @@
-import { DEFAULT_PROFILE, DEFAULT_TWEET_PROFILE, DEFAULT_THRESHOLDS, DEFAULT_BATCH_SIZE, DEFAULT_MODEL_NAME, DEFAULT_DISPLAY, linesToList, listToLines, newProfileId } from '../shared/profile.js';
+import { DEFAULT_PROFILE, DEFAULT_TWEET_PROFILE, DEFAULT_XHS_PROFILE, DEFAULT_THRESHOLDS, DEFAULT_BATCH_SIZE, DEFAULT_MODEL_NAME, DEFAULT_DISPLAY, linesToList, listToLines, newProfileId } from '../shared/profile.js';
+import { PROMO_SKIP_MIN } from '../shared/policy.js';
 
 const $ = (id) => document.getElementById(id);
 const LIST_FIELDS = ['core_topics', 'methods', 'materials', 'not_interested'];
@@ -25,6 +26,15 @@ function readProfile() {
 function fillTweetProfile(tp) {
   $('t_summary').value = tp.summary || '';
   for (const f of TWEET_LIST_FIELDS) $(`t_${f}`).value = listToLines(tp[f]);
+}
+
+function fillXhsProfile(xp) {
+  $('x_summary').value = xp.summary || '';
+  for (const f of ['interests', 'noise']) $(`x_${f}`).value = listToLines(xp[f]);
+}
+
+function readXhsProfile() {
+  return { summary: $('x_summary').value.trim(), interests: linesToList($('x_interests').value), noise: linesToList($('x_noise').value) };
 }
 
 function readTweetProfile() {
@@ -74,6 +84,8 @@ async function load() {
   fillProfile({ ...DEFAULT_PROFILE, ...(profiles.find((p) => p.id === editingId) || {}) });
   renderProfileSelect();
   fillTweetProfile({ ...DEFAULT_TWEET_PROFILE, ...(s.tweetProfile || {}) });
+  fillXhsProfile({ ...DEFAULT_XHS_PROFILE, ...(s.xhsProfile || {}) });
+  $('promoSkipMin').value = s.thresholds?.promoSkipMin ?? PROMO_SKIP_MIN;
   const d = { ...DEFAULT_DISPLAY, ...(s.display || {}) };
   $('skipMode').value = d.skipMode;
   $('followAccent').checked = d.followAccent !== false;
@@ -97,14 +109,16 @@ function flash(el, text, ok) {
 
 $('save').addEventListener('click', async () => {
   commitEditing();
+  const s0 = await send({ type: 'getSettings' }); // keep per-site skip modes chosen from the toolbars
   const patch = {
     apiKey: $('apiKey').value.trim(),
     model: $('model').value.trim() || DEFAULT_MODEL_NAME,
     profiles,
     activeProfileId,
     tweetProfile: readTweetProfile(),
-    display: { skipMode: $('skipMode').value, followAccent: $('followAccent').checked, reasons: $('reasons').checked, sortFollowFirst: $('sortFollowFirst').checked },
-    thresholds: { followMin: clamp01($('followMin').value, DEFAULT_THRESHOLDS.followMin), skipMin: clamp01($('skipMin').value, DEFAULT_THRESHOLDS.skipMin) },
+    xhsProfile: readXhsProfile(),
+    display: { ...(s0.display || {}), skipMode: $('skipMode').value, followAccent: $('followAccent').checked, reasons: $('reasons').checked, sortFollowFirst: $('sortFollowFirst').checked },
+    thresholds: { followMin: clamp01($('followMin').value, DEFAULT_THRESHOLDS.followMin), skipMin: clamp01($('skipMin').value, DEFAULT_THRESHOLDS.skipMin), promoSkipMin: clamp01($('promoSkipMin').value, PROMO_SKIP_MIN) },
     batchSize: Math.max(1, Math.min(20, Number($('batchSize').value) || DEFAULT_BATCH_SIZE)),
   };
   const r = await send({ type: 'setSettings', patch });
@@ -140,6 +154,7 @@ $('profileDelete').addEventListener('click', () => {
   switchEditing(profiles[0].id);
 });
 $('resetTweetProfile').addEventListener('click', () => fillTweetProfile(DEFAULT_TWEET_PROFILE));
+$('resetXhsProfile').addEventListener('click', () => fillXhsProfile(DEFAULT_XHS_PROFILE));
 
 $('ping').addEventListener('click', async () => {
   flash($('pingStatus'), '连接中…', true);

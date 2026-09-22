@@ -104,7 +104,7 @@ export function tooltip(v, reasonLabels) {
     if (v.reasons && reasonLabels) {
       lines.push(`维度：${Object.entries(v.reasons).map(([k, x]) => `${reasonLabels[k] || k} ${pct(x)}`).join(' · ')}`);
     }
-    if (typeof v.reviewProb === 'number' && v.reviewProb >= REVIEW_MIN) lines.push(`${v.chipTitle || '可能是综述 / 评述类文章'}（${pct(v.reviewProb)}）`);
+    if (typeof v.reviewProb === 'number' && v.reviewProb >= REVIEW_MIN) lines.push(`${v.chipTitle || '可能是综述 / 评述类文章'}（${pct(v.reviewProb)}）${v.promoSkipped ? '，已按推广 / 广告规则判为跳过' : ''}`);
     if (v.basis) lines.push(`依据：${{ full: '完整摘要', snippet: '标题 + 摘要片段', title: '仅标题' }[v.basis] || v.basis}`);
   }
   if (v.manual) lines.push(`当前为手动改判（AI 原判：${v.label ? LABELS[v.label].zh : '无'}）`);

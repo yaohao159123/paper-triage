@@ -94,7 +94,8 @@ test('content script: scan → verdict badges → toolbar counts → filters →
   document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', altKey: true, bubbles: true }));
   document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'h', altKey: true, bubbles: true }));
   const patch = sent.filter((m) => m.type === 'setSettings').at(-1);
-  assert.equal(patch.patch.display.skipMode, 'hide');
+  assert.equal(patch.patch.display.skipModes.scholar, 'hide', 'per-site skip mode persisted');
+  assert.ok(document.documentElement.classList.contains('pt-skip-hide'), 'applied locally right away');
   // rerun message re-triages every entry with force
   const before = sent.filter((m) => m.type === 'triage').length;
   await dispatch({ type: 'rerun' });

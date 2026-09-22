@@ -24,6 +24,7 @@ export function normalizePaper(raw) {
     source: cleanText(raw.source, 40),
     abstractFull: !!raw.abstractFull,
     tweetId: cleanText(raw.tweetId, 40),
+    postId: cleanText(raw.postId, 64),
     quotedText: cleanText(raw.quotedText, 600),
   };
   p.key = paperKey(p);
@@ -54,6 +55,7 @@ export function titleSlug(title) {
 /** Stable key: DOI, else arXiv id, else slugged title. */
 export function paperKey(p) {
   if (p.tweetId) return `tweet:${p.tweetId}`;
+  if (p.postId) return `xhs:${p.postId}`;
   if (p.doi) return `doi:${p.doi}`;
   if (p.arxivId) return `arxiv:${p.arxivId}`;
   return `title:${titleSlug(p.title)}`;

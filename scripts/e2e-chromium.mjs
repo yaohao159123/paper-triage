@@ -22,7 +22,8 @@ const PAGES = [
   { host: 'arxiv.org', path: '/list/cond-mat.mtrl-sci/new', fixture: 'arxiv-list.html', expectMin: 45, scrollTo: 'dl', toolbar: true, expectRuns: true },
   { host: 'arxiv.org', path: '/abs/2609.22268', pathPrefix: '/abs/', fixture: 'arxiv-abs.html', expectMin: 1, single: true },
   { host: 'pubmed.ncbi.nlm.nih.gov', path: '/?term=microwave+dielectric+biomass', fixture: 'pubmed.html', expectMin: 2, toolbar: true },
-  { host: 'x.com', path: '/home', fixture: 'x-home.html', expectMin: 4, toolbar: true },
+  { host: 'x.com', path: '/home', fixture: 'x-home.html', expectMin: 4, toolbar: true, xCollapse: true },
+  { host: 'www.xiaohongshu.com', path: '/explore', fixture: 'xhs-explore.html', expectMin: 6, toolbar: true, masonry: true },
 ];
 
 function apiKey() {
@@ -139,6 +140,14 @@ async function main() {
       const shot = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false }, sessionId);
       const file = path.join(OUT, `${page.host}${page.pathPrefix ? '-abs' : ''}.png`);
       writeFileSync(file, Buffer.from(shot.data, 'base64'));
+      const siteChecks = await evalIn(`(() => {
+        const html = document.documentElement;
+        const out = { skipMode: ['collapse','dim','hide'].find(m => html.classList.contains('pt-skip-' + m)) };
+        if (${page.xCollapse ? 'true' : 'false'}) { const a = document.querySelector('article.pt-skipped'); out.mediaHidden = a ? [...a.querySelectorAll('[data-testid="tweetPhoto"]')].every(el => getComputedStyle(el).display === 'none') : null; out.textClamped = a ? getComputedStyle(a.querySelector('[data-testid="tweetText"]')).webkitLineClamp === '1' : null; }
+        if (${page.masonry ? 'true' : 'false'}) { const feed = document.querySelector('#exploreFeeds'); const cards = [...feed.querySelectorAll('section.note-item')]; out.relayout = feed.dataset.ptRelayout === '1'; out.hidden = cards.filter(c => getComputedStyle(c).display === 'none').length; out.visiblePositions = cards.filter(c => getComputedStyle(c).display !== 'none').map(c => c.style.transform); out.feedHeight = feed.style.height; }
+        return out; })()`);
+      const siteOk = (!page.xCollapse || (siteChecks.skipMode === 'collapse' && siteChecks.mediaHidden !== false && siteChecks.textClamped === true))
+        && (!page.masonry || (siteChecks.skipMode === 'hide' && siteChecks.relayout === true && siteChecks.hidden === counts.skip && new Set(siteChecks.visiblePositions).size === siteChecks.visiblePositions.length));
       // toolbar checks on list pages: collapse markers, hide mode hides skipped entries, reasons shown, sort moves 关注 first
       const tb = await evalIn(`(async () => {
         const t = document.querySelector('.pt-toolbar'); if (!t) return null;
@@ -154,21 +163,20 @@ async function main() {
         return out;
       })()`);
       const toolbarOk = page.toolbar
-        ? !!tb && tb.collapsed && tb.hiddenInHideMode === counts.skipped && (!page.expectRuns || tb.runs >= 1) && (page.host === 'x.com' || tb.sortedFollowBeforeSkip !== false)
+        ? !!tb && (tb.collapsed || page.masonry) && tb.hiddenInHideMode === counts.skipped && (!page.expectRuns || tb.runs >= 1) && (page.host === 'x.com' || tb.sortedFollowBeforeSkip !== false)
         : tb === null;
       const singleOk = !page.single || (counts.skipped === 0 && counts.badges === 1);
-      const ok = counts.badges >= page.expectMin && counts.error === 0 && counts.loading === 0 && counts.skipped >= counts.skip && toolbarOk && singleOk; // arXiv greys dt+dd per entry
+      const ok = counts.badges >= page.expectMin && counts.error === 0 && counts.loading === 0 && counts.skipped >= counts.skip && toolbarOk && singleOk && siteOk; // arXiv greys dt+dd per entry
       if (!ok) failed = true;
-      summary.push({ host: page.host + (page.pathPrefix || ''), ok, ms, ...counts, toolbar: tb, screenshot: file, sample, errTitles });
+      summary.push({ host: page.host + (page.pathPrefix || ''), ok, ms, ...counts, toolbar: tb, site: siteChecks, screenshot: file, sample, errTitles });
       // 3. manual override on the first badge: click cycles, alt-click restores
       if (page.host === 'scholar.google.com' && counts.badges) {
         const before = await evalIn(`document.querySelector('.pt-badge').textContent`);
+        const badgeState = () => evalIn(`document.querySelector('.pt-badge').textContent + '|' + document.querySelector('.pt-badge').classList.contains('pt-manual')`);
         await evalIn(`document.querySelector('.pt-badge').click()`);
-        await sleep(400);
-        const after = await evalIn(`document.querySelector('.pt-badge').textContent + '|' + document.querySelector('.pt-badge').classList.contains('pt-manual')`);
+        const after = await waitFor(async () => { const v = await badgeState(); return v !== `${before}|false` ? v : null; }, { timeout: 5000, every: 100 });
         await evalIn(`document.querySelector('.pt-badge').dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, altKey:true}))`);
-        await sleep(400);
-        const restored = await evalIn(`document.querySelector('.pt-badge').textContent + '|' + document.querySelector('.pt-badge').classList.contains('pt-manual')`);
+        const restored = await waitFor(async () => { const v = await badgeState(); return v === `${before}|false` ? v : null; }, { timeout: 5000, every: 100 }).catch(async () => badgeState());
         summary.push({ host: 'override-check', before, after, restored, ok: after.endsWith('true') && restored === `${before}|false` });
         if (!(after.endsWith('true') && restored === `${before}|false`)) failed = true;
       }

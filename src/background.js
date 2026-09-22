@@ -1,10 +1,10 @@
 // Service worker: owns the API key, talks to Jev, keeps the verdict cache.
 import { askJev, pingJev, JevError } from './shared/jev.js';
 import { DOMAINS } from './shared/questions.js';
-import { verdictFromAnswers } from './shared/policy.js';
+import { verdictFromAnswers, applyPromoPolicy } from './shared/policy.js';
 import { DEFAULT_DISPLAY } from './shared/profile.js';
 import { chunk, normalizePaper, basisOf, BASIS_RANK } from './shared/paper.js';
-import { DEFAULT_THRESHOLDS, DEFAULT_BATCH_SIZE, DEFAULT_MODEL_NAME, DEFAULT_TWEET_PROFILE, ensureProfiles, activeProfile, profileHash, tweetProfileHash } from './shared/profile.js';
+import { DEFAULT_THRESHOLDS, DEFAULT_BATCH_SIZE, DEFAULT_MODEL_NAME, DEFAULT_TWEET_PROFILE, DEFAULT_XHS_PROFILE, ensureProfiles, activeProfile, profileHash, tweetProfileHash, xhsProfileHash } from './shared/profile.js';
 
 const SETTINGS_KEY = 'settings';
 const CACHE_PREFIX = 'v:';
@@ -24,6 +24,7 @@ export async function getSettings() {
   merged.activeProfileId = activeProfileId;
   merged.profile = activeProfile(merged); // the paper profile judgments use
   merged.tweetProfile = { ...DEFAULT_TWEET_PROFILE, ...(merged.tweetProfile || {}) };
+  merged.xhsProfile = { ...DEFAULT_XHS_PROFILE, ...(merged.xhsProfile || {}) };
   merged.display = { ...DEFAULT_DISPLAY, ...(merged.display || {}) };
   return merged;
 }
@@ -65,7 +66,7 @@ function describeError(err) {
 export async function triage(rawPapers, { force = false, domain = 'paper' } = {}) {
   const settings = await getSettings();
   const dom = DOMAINS[domain] || DOMAINS.paper;
-  const profile = domain === 'tweet' ? settings.tweetProfile : settings.profile;
+  const profile = profileFor(settings, domain);
   const papers = [];
   const seen = new Set();
   for (const raw of rawPapers) {
@@ -74,7 +75,7 @@ export async function triage(rawPapers, { force = false, domain = 'paper' } = {}
     seen.add(p.key);
     papers.push(p);
   }
-  const ns = domain === 'tweet' ? tweetProfileHash(profile) : profileHash(profile);
+  const ns = namespaceFor(profile, domain);
   const cached = await readCache(ns, papers.map((p) => p.key));
   const verdicts = {};
   const todo = [];
@@ -99,7 +100,7 @@ export async function triage(rawPapers, { force = false, domain = 'paper' } = {}
         const res = await askJev({ apiKey: settings.apiKey, model: settings.model || DEFAULT_MODEL_NAME }, state, questions);
         const out = {};
         batch.forEach((p, i) => {
-          const v = verdictFromAnswers(res.answers, i, settings.thresholds, { model: res.model, ts: Date.now() }, reasonKeys);
+          const v = applyPromoPolicy(verdictFromAnswers(res.answers, i, settings.thresholds, { model: res.model, ts: Date.now() }, reasonKeys), { promoIsNoise: !!dom.promoIsNoise, promoSkipMin: settings.thresholds?.promoSkipMin });
           v.manual = cached[p.key]?.manual || null;
           v.title = p.title;
           v.basis = basisOf(p);
@@ -122,9 +123,21 @@ export async function triage(rawPapers, { force = false, domain = 'paper' } = {}
   return { verdicts, errors, profileHash: ns };
 }
 
+function profileFor(settings, domain) {
+  if (domain === 'tweet') return settings.tweetProfile;
+  if (domain === 'xhs') return settings.xhsProfile;
+  return settings.profile;
+}
+
+function namespaceFor(profile, domain) {
+  if (domain === 'tweet') return tweetProfileHash(profile);
+  if (domain === 'xhs') return xhsProfileHash(profile);
+  return profileHash(profile);
+}
+
 async function override(key, manual, domain = 'paper') {
   const settings = await getSettings();
-  const ns = domain === 'tweet' ? tweetProfileHash(settings.tweetProfile) : profileHash(settings.profile);
+  const ns = namespaceFor(profileFor(settings, domain), domain);
   const [existing] = Object.values(await readCache(ns, [key]));
   const next = { ...(existing || { label: null, probs: null }), manual: manual || null };
   await writeCache(ns, { [key]: next });

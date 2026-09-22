@@ -79,3 +79,26 @@ html.pt-disabled .pt-skipped { opacity: 1 !important; filter: none !important; d
 html.pt-disabled .pt-follow-item { box-shadow: none; background: transparent; }
 html.pt-disabled [data-pt-key] { display: revert !important; }
 html.pt-disabled.pt-skip-collapse .pt-skipped :is(.gs_a, .gs_rs, .gs_fl, .gs_ggs, .list-authors, .list-comments, .list-subjects, p, .docsum-citation, .full-view-snippet) { display: revert !important; }
+
+/* ===== X / Twitter：跳过的推文折叠成一行（头像缩小、媒体与操作栏隐藏、正文一行截断） ===== */
+html.pt-skip-collapse.pt-site-x article.pt-skipped:not(.pt-expanded) { max-height: none; overflow: visible; }
+html.pt-skip-collapse.pt-site-x article.pt-skipped:not(.pt-expanded) :is([data-testid="tweetPhoto"], [data-testid="videoPlayer"], [data-testid="videoComponent"], [data-testid="card.wrapper"], [data-testid="card.layoutLarge.media"], [data-testid="card.layoutSmall.media"], [role="group"], [data-testid="tweetText"] ~ div[role="link"], [data-testid="Tweet-User-Avatar"] ~ div [data-testid="tweetText"] ~ div:has(article)) { display: none !important; }
+html.pt-skip-collapse.pt-site-x article.pt-skipped:not(.pt-expanded) [data-testid="tweetText"] { display: -webkit-box !important; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px !important; line-height: 1.4 !important; color: #71767b !important; }
+html.pt-skip-collapse.pt-site-x article.pt-skipped:not(.pt-expanded) [data-testid="Tweet-User-Avatar"] { transform: scale(0.55); transform-origin: top left; height: 24px !important; }
+html.pt-skip-collapse.pt-site-x article.pt-skipped:not(.pt-expanded) [data-testid="User-Name"] { font-size: 12px !important; }
+html.pt-skip-collapse.pt-site-x article.pt-skipped:not(.pt-expanded) { opacity: 0.55; filter: none; }
+html.pt-site-x .pt-run { padding: 4px 16px 4px 64px; border-bottom: 1px solid rgba(128,128,128,0.15); }
+html.pt-site-x .pt-follow-item { box-shadow: inset 3px 0 0 #2e7d32; background: rgba(46, 125, 50, 0.06); }
+html.pt-site-x .pt-reasons { color: #8b98a5; }
+
+/* ===== 小红书：默认「隐藏」屏蔽项（隐藏后由脚本重排瀑布流）；「折叠」= 去掉封面只留小标题 ===== */
+html.pt-site-xhs .pt-badge { font-size: 11px; margin: 0 4px 2px 0; }
+html.pt-site-xhs .footer .pt-reasons { display: block; margin: 0 0 2px; font-size: 10px; }
+html.pt-skip-hide.pt-site-xhs section.pt-skipped { display: none !important; }
+html.pt-skip-collapse.pt-site-xhs section.pt-skipped:not(.pt-expanded) :is(a.cover, .author-wrapper) { display: none !important; }
+html.pt-skip-collapse.pt-site-xhs section.pt-skipped:not(.pt-expanded) { opacity: 0.45; filter: grayscale(1); }
+html.pt-skip-collapse.pt-site-xhs section.pt-skipped:not(.pt-expanded) .title { font-size: 11px !important; }
+html.pt-skip-dim.pt-site-xhs section.pt-skipped a.cover { filter: grayscale(1) blur(6px); }
+html.pt-site-xhs .pt-follow-item { box-shadow: 0 0 0 2px #2e7d32; border-radius: 12px; background: transparent; }
+html.pt-site-xhs .pt-run { display: none !important; } /* 瀑布流里没有「连续」的概念 */
+html.pt-site-xhs #noteContainer .pt-badge { vertical-align: middle; }

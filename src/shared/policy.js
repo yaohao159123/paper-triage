@@ -27,6 +27,17 @@ export function probsFromScoreAnswer(answer) {
 }
 
 export const UNSURE_MAX_PROB = 0.6;
+export const PROMO_SKIP_MIN = 0.8;
+
+/** Feeds (tweets, 小红书): a confidently promotional item is noise unless it is a confident 关注. */
+export function applyPromoPolicy(verdict, { promoIsNoise = false, promoSkipMin = PROMO_SKIP_MIN } = {}) {
+  if (!promoIsNoise || typeof verdict.reviewProb !== 'number') return verdict;
+  if (verdict.reviewProb >= promoSkipMin && verdict.probs.follow < 0.8 && verdict.label !== 'skip') {
+    verdict.label = 'skip';
+    verdict.promoSkipped = true;
+  }
+  return verdict;
+}
 
 /** Builds one verdict for paper i from a Jev answers map. reasonKeys: extra Noul ids (e.g. ['topic','method','material']). */
 export function verdictFromAnswers(answers, i, thresholds, meta = {}, reasonKeys = []) {

@@ -35,7 +35,13 @@ export const DEFAULT_THRESHOLDS = { followMin: 0.5, skipMin: 0.6 };
 export const DEFAULT_BATCH_SIZE = 10;
 
 /** How verdicts are shown. skipMode: collapse (one line) | dim (grey) | hide. */
-export const DEFAULT_DISPLAY = { skipMode: 'collapse', reasons: true, followAccent: true, sortFollowFirst: false };
+export const DEFAULT_DISPLAY = { skipMode: 'collapse', skipModes: {}, reasons: true, followAccent: true, sortFollowFirst: false };
+
+/** Effective skip mode for a site: explicit per-site choice > adapter default > global. */
+export function skipModeFor(display, site, adapterDefault) {
+  const d = display || DEFAULT_DISPLAY;
+  return d.skipModes?.[site] || adapterDefault || d.skipMode || 'collapse';
+}
 export const SKIP_MODES = ['collapse', 'dim', 'hide'];
 export const DEFAULT_MODEL_NAME = 'jev-latest';
 
@@ -137,4 +143,47 @@ export function tweetProfileHash(profile) {
     h = Math.imul(h, 0x01000193) >>> 0;
   }
   return `t${h.toString(16).padStart(8, '0')}`;
+}
+
+/* ---------- Xiaohongshu (小红书): learning-only feed ---------- */
+
+export const DEFAULT_XHS_PROFILE = {
+  summary:
+    'Reader uses Xiaohongshu only to learn. Wants educational posts (tutorials, explanations, tool walkthroughs, study notes, research summaries) in the interest areas below, and wants everything else hidden: lifestyle, shopping, fashion, food, travel, dating, celebrities, memes, and ads.',
+  interests: [
+    'AI and large language models: prompts, agents, Claude / ChatGPT / coding assistants, AI tools and workflows',
+    'programming, software, data science, automation, no-code tools',
+    'scientific research skills: literature search, paper writing, PhD life, academic tools, reference managers',
+    'materials science, metallurgy, energy and decarbonisation',
+    'productivity, note-taking and knowledge management (Obsidian, Notion, Zotero)',
+    'English and academic writing',
+  ],
+  noise: [
+    'fashion, beauty, skincare, outfits, hair',
+    'food, restaurants, recipes, cafes, travel, hotels, city guides',
+    'dating, relationships, family drama, gossip, celebrities, idols, TV shows, games',
+    'shopping hauls, product promotions, discount codes, affiliate links, paid courses sold with hype',
+    'fitness, weight loss, health tips without evidence, astrology, fortune-telling',
+    'generic motivational quotes, study-vlog aesthetics with no actual content',
+  ],
+};
+
+const XHS_FIELDS = ['summary', 'interests', 'noise'];
+
+export function xhsProfileForState(profile) {
+  const p = { ...DEFAULT_XHS_PROFILE, ...(profile || {}) };
+  const out = { summary: p.summary };
+  for (const k of XHS_FIELDS.slice(1)) if (Array.isArray(p[k]) && p[k].length) out[k] = p[k];
+  return out;
+}
+
+export function xhsProfileHash(profile) {
+  const p = xhsProfileForState(profile);
+  const text = JSON.stringify(XHS_FIELDS.map((k) => p[k] ?? null));
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i += 1) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return `x${h.toString(16).padStart(8, '0')}`;
 }

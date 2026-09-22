@@ -115,3 +115,23 @@ test('tweet domain uses the tweet profile, its own namespace and chip text', asy
   assert.equal(calls.length, 1, 'cache hit in the tweet namespace');
   assert.equal(r2.verdicts['tweet:42'].manual, 'skip');
 });
+
+test('xhs domain uses the xhs profile and its own namespace', async () => {
+  store.clear();
+  calls = [];
+  globalThis.fetch = async (url, init) => {
+    const body = JSON.parse(init.body);
+    calls.push(body);
+    const answers = {};
+    body.state.posts.forEach((p, i) => { answers[`paper_${i}_priority`] = { probabilities: /Claude/.test(p.title) ? FOLLOW : SKIP }; answers[`paper_${i}_review`] = { noul: 0.2 }; });
+    return { status: 200, ok: true, headers: { get: () => null }, text: async () => JSON.stringify({ model: 'jev-test', answers }) };
+  };
+  await handleMessage({ type: 'setSettings', patch: { apiKey: 'k' } });
+  const r = await handleMessage({ type: 'triage', domain: 'xhs', items: [{ title: 'Claude Code 教程', postId: 'a1' }, { title: '穿搭', postId: 'a2' }] });
+  assert.ok(r.ok);
+  assert.match(r.profileHash, /^x[0-9a-f]{8}$/);
+  assert.ok(calls[0].state.reader.interests.length > 0);
+  assert.equal(r.verdicts['xhs:a1'].label, 'follow');
+  assert.equal(r.verdicts['xhs:a2'].label, 'skip');
+  assert.equal(r.verdicts['xhs:a2'].chip, '广告');
+});

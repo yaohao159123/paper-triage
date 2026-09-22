@@ -4,6 +4,7 @@ const DOI_IN_URL = /10\.\d{4,9}\/[^\s?#"']+/i;
 
 export const scholarAdapter = {
   id: 'scholar',
+  domain: 'paper',
   matches: (loc) => /^scholar\.google\./.test(loc.hostname),
   findEntries(root) {
     const out = [];

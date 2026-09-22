@@ -5,8 +5,15 @@
 | 层 | 命令 | 覆盖 | 依赖 |
 |---|---|---|---|
 | 单元 | `npm test` | 策略阈值、Jev 请求/响应/重试、文献键与去重、state/questions 形状（文献 + 推文）、画像哈希与迁移、后台 triage（缓存命名空间 / 完整摘要升级 / 改判保留 / 推文域）、渲染与工具条、五个适配器（真实抓取的 Scholar / arXiv 列表 / arXiv 单篇 + 手写 PubMed / X 夹具）、内容脚本集成（假 chrome 桥） | jsdom |
-| 模型实测 | `npm run eval -- --scholar` / `npm run eval -- --tweets` | 文献：12 条人工标注 + Scholar 夹具 10 篇；推文：12 条人工标注（4 关注 / 3 普通 / 5 跳过） | `TYPESAFE_API_KEY`（环境变量或 `~/.claude/settings.json` 的 env） |
+| 模型实测 | `npm run eval -- --scholar` / `--tweets` / `--xhs` | 文献：12 条人工标注 + Scholar 夹具 10 篇；推文：12 条人工标注（4 关注 / 3 普通 / 5 跳过） | `TYPESAFE_API_KEY`（环境变量或 `~/.claude/settings.json` 的 env） |
 | 端到端 | `npm run e2e`（加 `--headed` 可视） | 在 Playwright 自带 Chrome for Testing 里加载扩展，把 Scholar / arXiv（列表 + 单篇）/ PubMed / X 域名映射到本地 HTTPS 夹具，真实调用 Jev，断言徽章数 / 无错误 / 灰化数 / 工具条计数与「隐藏跳过」筛选 / 单篇页不灰化无工具条，验证点击改判与 ⌥ 恢复，截图到 `tests/e2e-out/` | Chromium 1208、openssl、API Key |
+
+## 2026-09-22 结果（0.4.0）
+
+- 单元：48 / 48 通过（新增：小红书适配器（信息流 + 笔记弹层）、小红书域的 state / questions / 缓存命名空间、瀑布流重排（transform 与 left/top 两种、还原、非 JS 网格不动）、每站点跳过模式优先级、推广判跳过策略）。
+- 小红书实测（jev-1.13.0，中文标题）：14 / 14 命中（5 学习 / 2 一般 / 7 屏蔽）；卖课广告的「广告」Noul 98%，其余 2~31%；三维判定合理（考研时间表：教学 63% / 干货 80% / 主题 44% → 一般）。10 条一批 0.95 s、6.8k token。
+- 端到端：新增 `www.xiaohongshu.com/explore` 夹具（卡片带 transform 定位）：6 条 → 2 学习 / 4 屏蔽，默认「隐藏」，4 张隐藏后剩余卡片重排且位置互不重叠；X 折叠模式下跳过推文的图片隐藏、正文单行截断。其余页面同 0.3.0。
+- 真实小红书 DOM 用专用 Chrome（端口 9333）抓取核对：`section.note-item[data-note-id]`、`.footer .title`、`.author .name`、`#noteContainer #detail-title / #detail-desc / .author-container .username`；未登录时瀑布流未布局（所有卡片 top/left 为 0），登录后的定位方式待真机确认。
 
 ## 2026-09-22 结果（0.3.0）
 

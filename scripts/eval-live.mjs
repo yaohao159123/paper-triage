@@ -4,10 +4,10 @@ import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { JSDOM } from 'jsdom';
 import { askJev } from '../src/shared/jev.js';
-import { buildTriageState, buildTriageQuestions, buildTweetState, buildTweetQuestions } from '../src/shared/questions.js';
+import { buildTriageState, buildTriageQuestions, buildTweetState, buildTweetQuestions, buildXhsState, buildXhsQuestions } from '../src/shared/questions.js';
 import { verdictFromAnswers, LABELS, matchedReasons } from '../src/shared/policy.js';
 import { normalizePaper, chunk } from '../src/shared/paper.js';
-import { DEFAULT_PROFILE, DEFAULT_TWEET_PROFILE, DEFAULT_THRESHOLDS, DEFAULT_BATCH_SIZE } from '../src/shared/profile.js';
+import { DEFAULT_PROFILE, DEFAULT_TWEET_PROFILE, DEFAULT_XHS_PROFILE, DEFAULT_THRESHOLDS, DEFAULT_BATCH_SIZE } from '../src/shared/profile.js';
 import { scholarAdapter } from '../src/content/adapters/scholar.js';
 
 function apiKey() {
@@ -73,7 +73,52 @@ async function evalTweets(key) {
   return failures;
 }
 
+const XHS = [
+  { expected: 'follow', title: 'Claude Code 保姆级教程：从安装到用 MCP 接入自己的数据库', author: 'AI工程笔记' },
+  { expected: 'follow', title: '读博第三年，我用 Zotero + Obsidian 管理 2000 篇文献的方法（附模板）', author: '科研小白' },
+  { expected: 'follow', title: 'Prompt 写不好？把这 5 个结构套进去，GPT 回答质量立刻不一样', author: '效率研究所' },
+  { expected: 'follow', title: '氢冶金到底是什么？一张图看懂 HYBRIT 直接还原铁工艺', author: '钢铁小课堂' },
+  { expected: 'follow', title: 'Python 数据分析入门｜pandas 十个最常用操作，附代码', author: '码农日记' },
+  { expected: 'normal', title: '考研上岸经验：每天学习 12 小时的时间表分享', author: '上岸学姐' },
+  { expected: 'normal', title: '30 岁转行做产品经理，我学到的三件事', author: '职场观察' },
+  { expected: 'skip', title: '合租室友请保持适当的距离好吗', author: 'ICQ小可乐' },
+  { expected: 'skip', title: '秋冬穿搭｜五套通勤look一周不重样', author: '穿搭日记' },
+  { expected: 'skip', title: '上海周末探店｜这家咖啡馆的提拉米苏绝了🍰', author: '吃货地图' },
+  { expected: 'skip', title: '一个月学会 AI 绘画？99 元课程限时 3 折，私信领资料', author: 'AI变现训练营' },
+  { expected: 'skip', title: '比如张翰，很久没听到他的消息了', author: '娱乐圈那些事' },
+  { expected: 'skip', title: '虫牙掉了才知里面有多大洞！', author: '牙医小王' },
+  { expected: 'skip', title: '轻舟已过万重山', author: '晚风' },
+];
+
+async function evalXhs(key) {
+  const samples = XHS.map((t) => ({ ...t, paper: normalizePaper({ title: t.title, authors: t.author, source: 'xhs', postId: String(Math.random()).slice(2) }) }));
+  const rows = [];
+  let failures = 0;
+  for (const batch of chunk(samples, DEFAULT_BATCH_SIZE)) {
+    const state = buildXhsState(DEFAULT_XHS_PROFILE, batch.map((s) => s.paper));
+    const questions = buildXhsQuestions(batch.length);
+    const t0 = performance.now();
+    const res = await askJev({ apiKey: key }, state, questions);
+    const ms = Math.round(performance.now() - t0);
+    batch.forEach((s, i) => {
+      const v = verdictFromAnswers(res.answers, i, DEFAULT_THRESHOLDS, { model: res.model }, ['interest', 'educational', 'concrete']);
+      const ok = s.expected === v.label ? 'ok' : 'MISS';
+      if (ok === 'MISS') failures += 1;
+      rows.push({ label: LABELS[v.label].zh, ok, expected: s.expected, skip: pct(v.probs.skip), normal: pct(v.probs.normal), follow: pct(v.probs.follow), ad: pct(v.reviewProb), 主题: pct(v.reasons.interest), 教学: pct(v.reasons.educational), 干货: pct(v.reasons.concrete), title: s.title.slice(0, 34) });
+    });
+    console.log(`xhs batch of ${batch.length}: ${ms} ms, tokens ${res.usage?.input_tokens ?? '?'}`);
+  }
+  console.table(rows);
+  console.log(failures ? `${failures} xhs misses` : 'all xhs cases labelled as expected');
+  return failures;
+}
+
 async function main() {
+  if (process.argv.includes('--xhs')) {
+    const key = apiKey();
+    if (!key) throw new Error('no TYPESAFE_API_KEY');
+    process.exit((await evalXhs(key)) ? 1 : 0);
+  }
   if (process.argv.includes('--tweets')) {
     const key = apiKey();
     if (!key) throw new Error('no TYPESAFE_API_KEY');
