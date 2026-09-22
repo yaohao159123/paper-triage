@@ -5,7 +5,7 @@ import { normalizePaper } from '../shared/paper.js';
 import { effectiveLabel, nextManualLabel, LABELS } from '../shared/policy.js';
 import { reasonLabels } from '../shared/questions.js';
 import { DEFAULT_DISPLAY, skipModeFor } from '../shared/profile.js';
-import { relayoutMasonry, restoreMasonry } from './masonry.js';
+import { relayoutMasonry, restoreMasonry, movedBySite } from './masonry.js';
 import { renderBadge, setDisabled, setSkipMode, setRootFlag, countLabels, BADGE_CLASS } from './render.js';
 import { mountToolbar, jumpToNextFollow } from './toolbar.js';
 import { refreshRuns, toggleExpanded } from './collapse.js';
@@ -56,6 +56,7 @@ async function start() {
     if (msg?.type === 'rerun') { scan({ all: true, force: true }).then(() => reply({ ok: true })); return true; }
     if (msg?.type === 'export') { reply({ ok: true, ...exportEntries(msg.labels || ['follow']) }); return false; }
     if (msg?.type === 'filter') { toolbar?.setFollowOnly(msg.mode === 'follow'); reply({ ok: true }); return false; }
+    if (msg?.type === 'diag') { reply({ ok: true, diag: diagnostics() }); return false; }
     return false;
   });
   document.addEventListener('click', onBadgeClick, true);
@@ -213,21 +214,57 @@ function liveEntries() {
 function afterLayout() {
   const entries = liveEntries().filter((e) => !e.single);
   if ((adapter.domain || 'paper') === 'paper' && entries.length) reorder(entries, display.sortFollowFirst ? 'follow-first' : 'original');
-  if (siteSkipMode() === 'collapse') refreshRuns(document, liveEntries().filter((e) => !e.single));
+  if (siteSkipMode() === 'collapse' && !adapter.masonry) refreshRuns(document, liveEntries().filter((e) => !e.single));
   else refreshRuns(document, []);
   relayoutIfMasonry();
   refreshToolbar();
 }
 
+let masonryWatched = null;
+let masonryTimer = null;
+/** The site re-lays out on scroll-load, image load and resize without adding nodes: watch style writes it makes and re-run ours. */
+function watchMasonry(container) {
+  if (!adapter.masonry || masonryWatched === container) return;
+  masonryWatched = container;
+  const schedule = (reset) => {
+    clearTimeout(masonryTimer);
+    masonryTimer = setTimeout(() => relayoutIfMasonry({ resetColumns: reset }), 120);
+  };
+  new MutationObserver((muts) => {
+    const foreign = muts.some((m) => m.target.matches?.(adapter.masonry.cards) && movedBySite(m.target));
+    if (foreign) schedule(true);
+  }).observe(container, { attributes: true, attributeFilter: ['style'], subtree: true });
+  window.addEventListener('resize', () => schedule(true));
+}
+
 /** 小红书 feed: after hiding cards, re-place the remaining ones so the grid has no holes. */
-function relayoutIfMasonry() {
+function relayoutIfMasonry({ resetColumns = false } = {}) {
   if (!adapter.masonry) return;
   const container = document.querySelector(adapter.masonry.container);
   const cards = container ? [...container.querySelectorAll(adapter.masonry.cards)] : [];
   if (!cards.length) return;
+  watchMasonry(container);
   const hiding = siteSkipMode() === 'hide' || !!document.documentElement.dataset.ptFollowOnly;
-  if (hiding) relayoutMasonry(container, cards);
+  if (hiding) relayoutMasonry(container, cards, { resetColumns });
   else restoreMasonry(container, cards);
+}
+
+/** Snapshot for the popup's 「复制诊断信息」: what this page looks like to the extension right now. */
+function diagnostics() {
+  const html = document.documentElement;
+  const counts = countLabels(document);
+  const out = { version: chrome.runtime.getManifest?.().version, url: location.href, site: adapter.id, domain: adapter.domain || 'paper', skipMode: siteSkipMode(), followOnly: !!html.dataset.ptFollowOnly, disabled: !!html.dataset.ptDisabled, counts, unmarked: adapter.findEntries(document).filter((e) => !e.containers[0].dataset.ptKey).length };
+  if (adapter.masonry) {
+    const container = document.querySelector(adapter.masonry.container);
+    const cards = container ? [...container.querySelectorAll(adapter.masonry.cards)] : [];
+    out.masonry = {
+      container: container ? { style: container.getAttribute('style'), relayout: container.dataset.ptRelayout || null, cols: container.dataset.ptCols || null, gap: container.dataset.ptGap || null, height: Math.round(container.getBoundingClientRect().height) } : null,
+      cards: cards.length,
+      hidden: cards.filter((c) => getComputedStyle(c).display === 'none').length,
+      sample: cards.slice(0, 4).map((c) => { const cs = getComputedStyle(c); const r = c.getBoundingClientRect(); return { key: c.dataset.ptKey || null, label: c.dataset.ptLabel || null, style: (c.getAttribute('style') || '').slice(0, 160), position: cs.position, transform: cs.transform, left: cs.left, top: cs.top, rect: [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)] }; }),
+    };
+  }
+  return out;
 }
 
 function refreshToolbar() {

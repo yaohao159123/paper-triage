@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "文献分诊 Paper Triage",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "用 TypeSafe Jev 判断文献和推文值不值得读：关注 / 普通 / 跳过，跳过的整条变灰（Google Scholar、arXiv、PubMed、X/Twitter、小红书）。",
   "permissions": ["storage", "clipboardWrite"],
   "host_permissions": ["https://api.typesafe.ai/*"],

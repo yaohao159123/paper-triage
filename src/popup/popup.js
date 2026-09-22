@@ -56,6 +56,20 @@ $('export').addEventListener('click', async () => {
   });
 });
 
+$('diag').addEventListener('click', async () => {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.id) return;
+  chrome.tabs.sendMessage(tab.id, { type: 'diag' }, async (r) => {
+    if (chrome.runtime.lastError || !r?.ok) { $('status').textContent = '当前页不是支持的页面'; return; }
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(r.diag, null, 2));
+      $('status').textContent = '诊断信息已复制，贴给开发者即可';
+    } catch (err) {
+      $('status').textContent = `复制失败：${err.message}`;
+    }
+  });
+});
+
 $('options').addEventListener('click', () => chrome.runtime.openOptionsPage());
 
 load();

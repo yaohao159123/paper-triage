@@ -24,6 +24,7 @@ const PAGES = [
   { host: 'pubmed.ncbi.nlm.nih.gov', path: '/?term=microwave+dielectric+biomass', fixture: 'pubmed.html', expectMin: 2, toolbar: true },
   { host: 'x.com', path: '/home', fixture: 'x-home.html', expectMin: 4, toolbar: true, xCollapse: true },
   { host: 'www.xiaohongshu.com', path: '/explore', fixture: 'xhs-explore.html', expectMin: 6, toolbar: true, masonry: true },
+  { host: 'www.xiaohongshu.com', path: '/explore/6a85231600000000050283d8?xsec_token=AB2', pathPrefix: '/explore/6a', fixture: 'xhs-note.html', expectMin: 2, toolbar: true, masonry: true, modal: true },
 ];
 
 function apiKey() {
@@ -146,8 +147,31 @@ async function main() {
         if (${page.xCollapse ? 'true' : 'false'}) { const a = document.querySelector('article[data-pt-skipped]'); out.mediaHidden = a ? [...document.querySelectorAll('article[data-pt-skipped] :is([data-testid="tweetPhoto"], div[role="link"], [data-testid="article-cover-image"], [role="group"])')].every(el => getComputedStyle(el).display === 'none') : null; out.quoteBlocks = document.querySelectorAll('article[data-pt-skipped] div[role="link"]').length; out.collapsedHeight = a ? Math.round(a.getBoundingClientRect().height) : null; out.textClamped = a ? getComputedStyle(a.querySelector('[data-testid="tweetText"]')).webkitLineClamp === '1' : null; }
         if (${page.masonry ? 'true' : 'false'}) { const feed = document.querySelector('#exploreFeeds'); const cards = [...feed.querySelectorAll('section.note-item')]; out.relayout = feed.dataset.ptRelayout === '1'; out.hidden = cards.filter(c => getComputedStyle(c).display === 'none').length; out.visiblePositions = cards.filter(c => getComputedStyle(c).display !== 'none').map(c => c.style.transform); out.feedHeight = feed.style.height; }
         return out; })()`);
+      if (page.masonry && !page.modal) {
+        // 只看关注 on the masonry: non-follow cards hidden, grid re-packed; then the site "re-lays out" a card and we must undo it
+        const fo = await evalIn(`(async () => {
+          const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+          const feed = document.querySelector('#exploreFeeds'); const cards = () => [...feed.querySelectorAll('section.note-item')];
+          document.querySelector('.pt-toolbar [data-action="followonly"]').click(); await sleep(300);
+          const visible = () => cards().filter(c => getComputedStyle(c).display !== 'none');
+          const out = { followOnly: !!document.documentElement.dataset.ptFollowOnly, visible: visible().length, visibleLabels: visible().map(c => c.dataset.ptLabel), positions: visible().map(c => c.style.transform) };
+          const victim = visible()[0]; victim.style.transform = 'translate(999px, 999px)'; await sleep(500);
+          out.afterSiteMove = victim.style.transform; out.distinct = new Set(visible().map(c => c.style.transform)).size === visible().length;
+          document.querySelector('.pt-toolbar [data-action="followonly"]').click(); await sleep(300);
+          out.restoredVisible = visible().length;
+          return out; })()`);
+        siteChecks.followOnly = fo;
+        siteChecks.followOnlyOk = fo.followOnly && fo.visibleLabels.every((l) => l === 'follow') && fo.visible === counts.follow && fo.afterSiteMove !== 'translate(999px, 999px)' && fo.distinct && fo.restoredVisible > fo.visible;
+      }
+      if (page.modal) {
+        const md = await evalIn(`(async () => { const sleep = (ms) => new Promise(r => setTimeout(r, ms)); document.querySelector('.pt-toolbar [data-action="followonly"]').click(); await sleep(300); const t = document.querySelector('#detail-title'); const out = { titleLabel: t?.dataset.ptLabel, titleVisible: t ? getComputedStyle(t).display !== 'none' : null, single: t?.dataset.ptSingle }; document.querySelector('.pt-toolbar [data-action="followonly"]').click(); return out; })()`);
+        siteChecks.modal = md;
+        siteChecks.modalOk = md.titleVisible === true && md.single === '1';
+      }
       const siteOk = (!page.xCollapse || (siteChecks.skipMode === 'collapse' && siteChecks.mediaHidden !== false && siteChecks.textClamped === true))
-        && (!page.masonry || (siteChecks.skipMode === 'hide' && siteChecks.relayout === true && siteChecks.hidden === counts.skip && new Set(siteChecks.visiblePositions).size === siteChecks.visiblePositions.length));
+        && (!page.masonry || (siteChecks.skipMode === 'hide' && siteChecks.relayout === true && siteChecks.hidden === counts.skip && new Set(siteChecks.visiblePositions).size === siteChecks.visiblePositions.length))
+        && (!(page.masonry && !page.modal) || siteChecks.followOnlyOk === true)
+        && (!page.modal || siteChecks.modalOk === true);
       // toolbar checks on list pages: collapse markers, hide mode hides skipped entries, reasons shown, sort moves 关注 first
       const tb = await evalIn(`(async () => {
         const t = document.querySelector('.pt-toolbar'); if (!t) return null;
@@ -158,6 +182,7 @@ async function main() {
         out.hiddenInHideMode = skipped().filter(el => getComputedStyle(el).display === 'none').length;
         sel.value = 'collapse'; sel.dispatchEvent(new Event('change')); await sleep(400);
         out.hiddenInCollapseMode = skipped().filter(el => getComputedStyle(el).display === 'none').length;
+        sel.value = ${JSON.stringify(page.masonry ? 'hide' : 'collapse')}; sel.dispatchEvent(new Event('change')); await sleep(300); // back to the site default so later pages see it
         const sortBtn = t.querySelector('[data-action="sort"]');
         if (sortBtn) { sortBtn.click(); await sleep(400); const order = [...document.querySelectorAll('[data-pt-key]')].map(el => el.dataset.ptLabel); out.sortedFirst = order[0]; out.sortedFollowBeforeSkip = order.lastIndexOf('follow') < (order.indexOf('skip') === -1 ? Infinity : order.indexOf('skip')); sortBtn.click(); await sleep(300); }
         return out;
@@ -166,6 +191,7 @@ async function main() {
         ? !!tb && (tb.collapsed || page.masonry) && tb.hiddenInHideMode === counts.skipped && (!page.expectRuns || tb.runs >= 1) && (page.host === 'x.com' || tb.sortedFollowBeforeSkip !== false)
         : tb === null;
       const singleOk = !page.single || (counts.skipped === 0 && counts.badges === 1);
+      if (page.modal) counts.skip = counts.skipped; // the modal entry is single: never greyed
       const ok = counts.badges >= page.expectMin && counts.error === 0 && counts.loading === 0 && counts.skipped >= counts.skip && toolbarOk && singleOk && siteOk; // arXiv greys dt+dd per entry
       if (!ok) failed = true;
       summary.push({ host: page.host + (page.pathPrefix || ''), ok, ms, ...counts, toolbar: tb, site: siteChecks, screenshot: file, sample, errTitles });

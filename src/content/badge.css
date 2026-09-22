@@ -53,7 +53,10 @@ html[data-pt-skip="collapse"] [data-pt-skipped]:not([data-pt-expanded]) .pt-badg
 html:not([data-pt-skip="collapse"]) .pt-run { display: none !important; }
 
 /* 只看关注 */
-html[data-pt-follow-only] [data-pt-key]:not([data-pt-label="follow"]) { display: none !important; }
+html[data-pt-follow-only] [data-pt-key]:not([data-pt-label="follow"]):not([data-pt-single]) { display: none !important; }
+/* 信息流站点的「只看关注」更严格：没标题、没判定的卡片和非推文格子也一并隐藏，只留关注 */
+html[data-pt-follow-only][data-pt-site="xhs"] section.note-item:not([data-pt-label="follow"]) { display: none !important; }
+html[data-pt-follow-only][data-pt-site="x"] [data-testid="cellInnerDiv"]:not([data-pt-label="follow"]):not(:has(article[data-pt-label="follow"])) { display: none !important; }
 html[data-pt-follow-only] .pt-run { display: none !important; }
 [data-pt-flash] { outline: 2px solid #2e7d32; outline-offset: 4px; border-radius: 4px; transition: outline-color 1s ease; }
 

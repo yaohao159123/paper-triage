@@ -55,6 +55,7 @@ export function renderBadge(entry, view) {
   renderReasons(badge, reasonsText);
   // State lives in data-* attributes: React-managed hosts (X, 小红书) rewrite className on re-render and would wipe classes.
   for (const c of entry.containers) {
+    if (entry.single) c.dataset.ptSingle = '1';
     if (label) c.dataset.ptLabel = label;
     else delete c.dataset.ptLabel;
     if (label === 'skip' && !entry.noGray) c.dataset.ptSkipped = '1';

@@ -71,3 +71,21 @@ test('applyPromoPolicy: confident promo becomes skip on feeds only, unless confi
   assert.equal(applyPromoPolicy(mk('normal', 0.5, 0.1), { promoIsNoise: true }).label, 'normal');
   assert.equal(applyPromoPolicy(mk('normal', 0.95, 0.1), { promoIsNoise: false }).label, 'normal', 'papers keep the review noul as information only');
 });
+
+test('readPosition falls back to computed transform/left when nothing is inline; movedBySite detects site rewrites', async () => {
+  const { readPosition, movedBySite, relayoutMasonry } = await import('../src/content/masonry.js');
+  const dom = new JSDOM('<style>#f section { position: absolute; } #f section.a { left: 227px; top: 40px; }</style><body><div id="f"><section class="a"></section><section style="transform: matrix(1, 0, 0, 1, 454, 80);"></section><section style="left: 0px; top: 0px"></section></div></body>');
+  const doc = dom.window.document;
+  const [a, b, c] = doc.querySelectorAll('section');
+  assert.deepEqual(readPosition(b), { mode: 'transform', x: 454, y: 80 }, 'matrix() parsed');
+  assert.deepEqual(readPosition(c), { mode: 'lt', x: 0, y: 0 });
+  const pa = readPosition(a);
+  assert.ok(pa === null || (pa.mode === 'lt' && pa.x === 227), 'stylesheet left/top read through computed style when jsdom resolves it');
+  const feed = doc.getElementById('f');
+  for (const s of [a, b, c]) { Object.defineProperty(s, 'offsetHeight', { value: 100 }); s.getBoundingClientRect = () => ({ width: 200, height: 100 }); }
+  assert.equal(movedBySite(c), false, 'never written by us yet');
+  relayoutMasonry(feed, [c, b, a].filter((s) => readPosition(s)), { isHidden: () => false });
+  assert.equal(movedBySite(c), false);
+  c.style.left = '999px';
+  assert.equal(movedBySite(c), true, 'site rewrote the position after us');
+});
