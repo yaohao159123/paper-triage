@@ -6,7 +6,14 @@
 |---|---|---|---|
 | 单元 | `npm test` | 策略阈值、Jev 请求/响应/重试、文献键与去重、state/questions 形状（文献 + 推文）、画像哈希与迁移、后台 triage（缓存命名空间 / 完整摘要升级 / 改判保留 / 推文域）、渲染与工具条、五个适配器（真实抓取的 Scholar / arXiv 列表 / arXiv 单篇 + 手写 PubMed / X 夹具）、内容脚本集成（假 chrome 桥） | jsdom |
 | 模型实测 | `npm run eval -- --scholar` / `--tweets` / `--xhs` | 文献：12 条人工标注 + Scholar 夹具 10 篇；推文：12 条人工标注（4 关注 / 3 普通 / 5 跳过） | `TYPESAFE_API_KEY`（环境变量或 `~/.claude/settings.json` 的 env） |
-| 端到端 | `npm run e2e`（加 `--headed` 可视） | 在 Playwright 自带 Chrome for Testing 里加载扩展，把 Scholar / arXiv（列表 + 单篇）/ PubMed / X 域名映射到本地 HTTPS 夹具，真实调用 Jev，断言徽章数 / 无错误 / 灰化数 / 工具条计数与「隐藏跳过」筛选 / 单篇页不灰化无工具条，验证点击改判与 ⌥ 恢复，截图到 `tests/e2e-out/` | Chromium 1208、openssl、API Key |
+| 端到端 | `npm run e2e`（加 `--headed` 可视） | 在 Playwright 自带 Chrome for Testing 里加载扩展，把 Scholar / arXiv（列表 + 单篇）/ PubMed / X / 小红书域名映射到本地 HTTPS 夹具，真实调用 Jev，断言徽章数 / 无错误 / 灰化数 / 工具条计数与「隐藏跳过」筛选 / 只看关注（含 macOS 键值的 Alt+F 与提示条）/ 单篇页不灰化无工具条，验证点击改判与 ⌥ 恢复，截图到 `tests/e2e-out/` | Chromium 1208、openssl、API Key |
+| 真机探针 | `browser-harness < /tmp/scholar-probe*.py`（见 07 的 0.4.6 记录） | 用专用 Chrome（端口 9333，登录态）打开真实站点，核对 DOM 结构、监听站点自身的 DOM 改动、注入扩展 CSS 与状态属性做隐藏 / 折叠 / 只看关注的模拟 | jev-ultrafast 的 browser-harness，专用 Chrome 在跑 |
+
+## 2026-09-22 结果（0.4.6）
+
+- 真实 Scholar 探针（`~/Projects/jev-ultrafast` 的 browser-harness 驱动专用 Chrome，登录态，搜索「electric arc furnace dust zinc recovery biochar」）：10 条 `div.gs_r.gs_or.gs_scl` 全带 `.gs_rt` 与 `data-cid`，父容器 `#gs_res_ccl_mid`；悬停 + 滚动 2.5 s 内 MutationObserver 记到 0 次改动；注入 `badge.css` 并按 render.js 的方式打 data-pt-* 后：折叠模式跳过项高 23px、摘要 display none，只看关注下 4 条关注可见 / 6 条隐藏，关闭后全部恢复，隐藏模式跳过项 none，sessionStorage 可写。无头 Chromium 直接访问真实 Scholar 会被「unusual traffic」拦下（`scripts/probe-scholar.mjs` 保留作参考）。
+- 单元：51 / 51（新增：错误态容器标记与 `countLabels` 的 error 计数；集成测试改用 macOS 真实键值 `key:"ƒ", code:"KeyF"` 触发 Alt+F，并断言提示条文案与「显示全部」退出；测试环境补 `requestAnimationFrame`）。
+- 端到端：Scholar 页通过 CDP 发 macOS 风格的 Option+F（key「ƒ」/ code KeyF）→ 只看关注开启、只剩关注条目可见、提示条文案匹配「只看关注：显示 N 条关注 · 隐藏 M 条」、点「显示全部」关闭且提示条隐藏；所有列表页断言筛选关闭时提示条隐藏；截图 `tests/e2e-out/scholar.google.com-followonly.png`。结果：8 页全部通过；Scholar 夹具 10 篇全为关注，提示条写「只看关注：显示 10 条关注 · 隐藏 0 条」（正是按钮「看起来没反应」的场景，现在有解释；0.4.6 终版对这种情况追加「本页全部为关注，无需隐藏」）。
 
 ## 2026-09-22 结果（0.4.5）
 

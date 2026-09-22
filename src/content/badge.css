@@ -53,10 +53,17 @@ html[data-pt-skip="collapse"] [data-pt-skipped]:not([data-pt-expanded]) .pt-badg
 html:not([data-pt-skip="collapse"]) .pt-run { display: none !important; }
 
 /* 只看关注 */
-html[data-pt-follow-only] [data-pt-key]:not([data-pt-label="follow"]):not([data-pt-single]) { display: none !important; }
+/* 出错（未判读）的条目永远保留显示，否则失败对用户不可见、也无法点徽章重试 */
+html[data-pt-follow-only] [data-pt-key]:not([data-pt-label="follow"]):not([data-pt-single]):not([data-pt-error]) { display: none !important; }
 /* 信息流站点的「只看关注」更严格：没标题、没判定的卡片和非推文格子也一并隐藏，只留关注 */
-html[data-pt-follow-only][data-pt-site="xhs"] section.note-item:not([data-pt-label="follow"]) { display: none !important; }
-html[data-pt-follow-only][data-pt-site="x"] [data-testid="cellInnerDiv"]:not([data-pt-label="follow"]):not(:has(article[data-pt-label="follow"])) { display: none !important; }
+html[data-pt-follow-only][data-pt-site="xhs"] section.note-item:not([data-pt-label="follow"]):not([data-pt-error]) { display: none !important; }
+html[data-pt-follow-only][data-pt-site="x"] [data-testid="cellInnerDiv"]:not([data-pt-label="follow"]):not([data-pt-error]):not(:has(article[data-pt-label="follow"], article[data-pt-error])) { display: none !important; }
+/* 只看关注开启时右上角常驻提示：显示了几条、隐藏了几条、还有几条判读中 / 未判读，带退出按钮（状态可见 + 用户可控） */
+.pt-notice { position: fixed; top: 72px; right: 12px; z-index: 2147483000; display: flex; align-items: center; gap: 8px; max-width: min(520px, calc(100vw - 24px)); padding: 6px 8px 6px 12px; border: 1px solid #a5d6a7; border-left: 4px solid #2e7d32; border-radius: 10px; background: rgba(234, 245, 234, 0.97); box-shadow: 0 3px 12px rgba(0,0,0,0.12); color: #1b5e20; font: 500 12px/1.4 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif; }
+.pt-notice[hidden] { display: none !important; }
+.pt-notice button { flex: none; margin: 0; padding: 3px 10px; border: 1px solid #2e7d32; border-radius: 999px; background: #2e7d32; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+.pt-notice button:hover { background: #256628; }
+html[data-pt-disabled] .pt-notice { display: none !important; }
 html[data-pt-follow-only] .pt-run { display: none !important; }
 [data-pt-flash] { outline: 2px solid #2e7d32; outline-offset: 4px; border-radius: 4px; transition: outline-color 1s ease; }
 
@@ -71,6 +78,8 @@ html[data-pt-follow-only] .pt-run { display: none !important; }
 .pt-toolbar .pt-tb-toggle { border-color: #d1d5db; }
 .pt-toolbar .pt-tb-active { background: #1f2937; border-color: #1f2937; color: #fff; }
 .pt-toolbar .pt-tb-active:hover { background: #111827; }
+.pt-toolbar [data-action="followonly"].pt-tb-active { background: #2e7d32; border-color: #2e7d32; } /* 与关注色一致，和右上角提示条呼应 */
+.pt-toolbar .pt-c-error { color: #b45309; }
 .pt-toolbar .pt-tb-collapse { padding: 0 5px; color: #9ca3af; font-size: 13px; }
 .pt-toolbar.pt-tb-collapsed > :not(.pt-tb-collapse) { display: none; }
 .pt-toolbar.pt-tb-collapsed { padding: 2px 5px; }
@@ -78,7 +87,7 @@ html[data-pt-follow-only] .pt-run { display: none !important; }
 @media (max-width: 760px) { .pt-toolbar { left: 8px; right: 8px; bottom: 8px; flex-wrap: wrap; border-radius: 12px; } }
 
 /* ===== Global off switch (popup toggle) ===== */
-html[data-pt-disabled] :is(.pt-badge, .pt-review, .pt-reasons, .pt-run, .pt-toolbar) { display: none !important; }
+html[data-pt-disabled] :is(.pt-badge, .pt-review, .pt-reasons, .pt-run, .pt-toolbar, .pt-notice) { display: none !important; }
 html[data-pt-disabled] [data-pt-skipped] { opacity: 1 !important; filter: none !important; display: revert !important; }
 html[data-pt-disabled] [data-pt-accent] { box-shadow: none; background: transparent; }
 html[data-pt-disabled] [data-pt-key] { display: revert !important; }

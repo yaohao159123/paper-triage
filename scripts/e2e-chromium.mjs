@@ -183,12 +183,28 @@ async function main() {
         sel.value = 'collapse'; sel.dispatchEvent(new Event('change')); await sleep(400);
         out.hiddenInCollapseMode = skipped().filter(el => getComputedStyle(el).display === 'none').length;
         sel.value = ${JSON.stringify(page.masonry ? 'hide' : 'collapse')}; sel.dispatchEvent(new Event('change')); await sleep(300); // back to the site default so later pages see it
+        out.noticeHiddenWhenOff = document.querySelector('.pt-notice')?.hidden === true;
         const sortBtn = t.querySelector('[data-action="sort"]');
         if (sortBtn) { sortBtn.click(); await sleep(400); const order = [...document.querySelectorAll('[data-pt-key]')].map(el => el.dataset.ptLabel); out.sortedFirst = order[0]; out.sortedFollowBeforeSkip = order.lastIndexOf('follow') < (order.indexOf('skip') === -1 ? Infinity : order.indexOf('skip')); sortBtn.click(); await sleep(300); }
         return out;
       })()`);
+      // 只看关注 through the keyboard exactly as macOS reports Option+F (key "ƒ", code KeyF), then the notice pill and its 「显示全部」 exit
+      let kb = null;
+      if (page.host === 'scholar.google.com') {
+        await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'ƒ', code: 'KeyF', modifiers: 1, windowsVirtualKeyCode: 70 }, sessionId);
+        await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'ƒ', code: 'KeyF', modifiers: 1, windowsVirtualKeyCode: 70 }, sessionId);
+        await sleep(300);
+        kb = await evalIn(`(() => { const n = document.querySelector('.pt-notice'); const vis = [...document.querySelectorAll('[data-pt-key]')].filter(el => getComputedStyle(el).display !== 'none'); return { followOnly: !!document.documentElement.dataset.ptFollowOnly, noticeShown: !!n && !n.hidden && getComputedStyle(n).display !== 'none', noticeText: n?.textContent, visibleLabels: [...new Set(vis.map(el => el.dataset.ptLabel))] }; })()`);
+        await evalIn(`document.querySelector('.pt-notice [data-action="showall"]').click()`); await sleep(200);
+        kb.offAfterShowAll = await evalIn(`!document.documentElement.dataset.ptFollowOnly && document.querySelector('.pt-notice').hidden`);
+        const shot2 = await cdp.send('Page.captureScreenshot', { format: 'png' }, sessionId);
+        writeFileSync(path.join(OUT, `${page.host}-followonly.png`), Buffer.from(shot2.data, 'base64'));
+        if (kb) { await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'ƒ', code: 'KeyF', modifiers: 1 }, sessionId); await sleep(200); const s3 = await cdp.send('Page.captureScreenshot', { format: 'png' }, sessionId); writeFileSync(path.join(OUT, `${page.host}-followonly.png`), Buffer.from(s3.data, 'base64')); await evalIn(`document.querySelector('.pt-notice [data-action="showall"]').click()`); }
+        tb.keyboard = kb;
+      }
+      const kbOk = !kb || (kb.followOnly && kb.noticeShown && /只看关注：显示 \d+ 条关注 · 隐藏 \d+ 条/.test(kb.noticeText) && kb.visibleLabels.every((l) => l === 'follow') && kb.offAfterShowAll === true);
       const toolbarOk = page.toolbar
-        ? !!tb && (tb.collapsed || page.masonry) && tb.hiddenInHideMode === counts.skipped && (!page.expectRuns || tb.runs >= 1) && (page.host === 'x.com' || tb.sortedFollowBeforeSkip !== false)
+        ? !!tb && (tb.collapsed || page.masonry) && tb.hiddenInHideMode === counts.skipped && (!page.expectRuns || tb.runs >= 1) && (page.host === 'x.com' || tb.sortedFollowBeforeSkip !== false) && tb.noticeHiddenWhenOff === true && kbOk
         : tb === null;
       const singleOk = !page.single || (counts.skipped === 0 && counts.badges === 1);
       if (page.modal) counts.skip = counts.skipped; // the modal entry is single: never greyed

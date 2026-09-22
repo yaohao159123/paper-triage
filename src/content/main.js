@@ -316,11 +316,12 @@ function onKey(e) {
     if (e.target?.classList?.contains(BADGE_CLASS)) { e.preventDefault(); onBadgeClick(e); }
     return;
   }
-  const k = e.key.toLowerCase();
-  if (k === 'n') { e.preventDefault(); jumpToNextFollow(document); }
-  else if (k === 'f' && toolbar) { e.preventDefault(); toolbar.setFollowOnly(!toolbar.getFollowOnly()); }
-  else if (k === 's' && toolbar && (adapter.domain || 'paper') === 'paper') { e.preventDefault(); toolbar.setSort(!toolbar.getSort()); }
-  else if (k === 'h' && toolbar) { e.preventDefault(); const next = siteSkipMode() === 'hide' ? 'collapse' : 'hide'; setDisplay({ skipModes: { ...(display.skipModes || {}), [adapter.id]: next } }); }
+  // Match the physical key: on macOS Option+F arrives as key "ƒ" (Option+N / Option+H as dead keys), never as "f".
+  const k = e.code || `Key${e.key.toUpperCase()}`;
+  if (k === 'KeyN') { e.preventDefault(); jumpToNextFollow(document); }
+  else if (k === 'KeyF' && toolbar) { e.preventDefault(); toolbar.setFollowOnly(!toolbar.getFollowOnly()); }
+  else if (k === 'KeyS' && toolbar && (adapter.domain || 'paper') === 'paper') { e.preventDefault(); toolbar.setSort(!toolbar.getSort()); }
+  else if (k === 'KeyH' && toolbar) { e.preventDefault(); const next = siteSkipMode() === 'hide' ? 'collapse' : 'hide'; setDisplay({ skipModes: { ...(display.skipModes || {}), [adapter.id]: next } }); }
 }
 
 /** Markdown list of the page's papers whose effective label is in `labels`, in page order. */

@@ -58,7 +58,7 @@ test('countLabels counts unique keys (dt+dd once) and pending; setSkipMode toggl
   const { doc, e1, e2 } = page();
   renderBadge(e1, { state: 'verdict', verdict: { label: 'follow', probs: { skip: 0, normal: 0, follow: 1 } } });
   renderBadge(e2, { state: 'loading' });
-  assert.deepEqual(countLabels(doc), { follow: 1, normal: 0, skip: 0, pending: 1, total: 2 });
+  assert.deepEqual(countLabels(doc), { follow: 1, normal: 0, skip: 0, pending: 1, error: 0, total: 2 });
   setSkipMode(doc, 'hide');
   assert.equal(doc.documentElement.dataset.ptSkip, 'hide');
   setSkipMode(doc, 'collapse');
@@ -141,4 +141,20 @@ test('reorder: 关注 first within each segment on the real arXiv listing (dt+dd
   assert.equal(domOrder.slice(0, firstSkip).every((e) => e.label !== 'skip'), true);
   reorder(entries, 'original');
   assert.deepEqual(idsIn(dl), originalIds, 'original order restored');
+});
+
+test('error state is marked on the container (so 只看关注 never hides a failure) and counted apart from pending', () => {
+  const doc = new JSDOM('<div id="c"><h3 id="m"></h3></div><div id="d"><h3 id="n"></h3></div>').window.document;
+  const entry = { containers: [doc.getElementById('c')], mount: doc.getElementById('m') };
+  renderBadge(entry, { state: 'loading' });
+  assert.equal(doc.getElementById('c').dataset.ptError, undefined);
+  renderBadge(entry, { state: 'error', message: 'boom' });
+  assert.equal(doc.getElementById('c').dataset.ptError, '1');
+  doc.getElementById('c').dataset.ptKey = 'k1';
+  const other = { containers: [doc.getElementById('d')], mount: doc.getElementById('n') };
+  renderBadge(other, { state: 'loading' });
+  doc.getElementById('d').dataset.ptKey = 'k2';
+  assert.deepEqual(countLabels(doc), { follow: 0, normal: 0, skip: 0, pending: 1, error: 1, total: 2 });
+  renderBadge(entry, { state: 'verdict', verdict: { label: 'follow', probs: { follow: 0.9, normal: 0.05, skip: 0.05 } } });
+  assert.equal(doc.getElementById('c').dataset.ptError, undefined, 'cleared once a verdict arrives');
 });

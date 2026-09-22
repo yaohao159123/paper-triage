@@ -8,6 +8,7 @@ const dom = new JSDOM(readFileSync(new URL('./fixtures/scholar.html', import.met
 const { window } = dom;
 for (const k of ['document', 'location', 'MutationObserver', 'HTMLElement', 'Node', 'MouseEvent', 'KeyboardEvent', 'Event']) globalThis[k] = window[k];
 globalThis.window = window;
+globalThis.requestAnimationFrame = (fn) => setTimeout(fn, 0);
 window.HTMLElement.prototype.scrollIntoView = function () {};
 
 const sent = [];
@@ -88,11 +89,18 @@ test('content script: scan → verdict badges → toolbar counts → filters →
   badge.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, altKey: true }));
   await until(() => badge.textContent === '关注');
   assert.ok(!badge.classList.contains('pt-manual'));
-  // keyboard: Alt+F toggles 只看关注, Alt+H asks the background to switch skip mode to hide
-  document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', altKey: true, bubbles: true }));
+  // keyboard, as macOS actually reports Option+letter (key is the composed character, code is the physical key):
+  // Alt+F toggles 只看关注, Alt+H asks the background to switch skip mode to hide
+  document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'ƒ', code: 'KeyF', altKey: true, bubbles: true }));
   assert.equal(document.documentElement.dataset.ptFollowOnly, '1');
-  document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', altKey: true, bubbles: true }));
-  document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'h', altKey: true, bubbles: true }));
+  // while 只看关注 is on, an in-page notice says what is shown / hidden and offers the way out
+  const notice = document.querySelector('.pt-notice');
+  assert.ok(notice && !notice.hidden, 'notice mounted while 只看关注 is on');
+  assert.match(notice.textContent, new RegExp(`只看关注.*显示 ${q('.pt-follow')} 条.*隐藏 ${skipCount} 条`));
+  notice.querySelector('[data-action="showall"]').click();
+  assert.equal(document.documentElement.dataset.ptFollowOnly, undefined, '「显示全部」turns the filter off');
+  assert.equal(document.querySelector('.pt-notice')?.hidden ?? true, true, 'notice gone when the filter is off');
+  document.body.dispatchEvent(new KeyboardEvent('keydown', { key: '˙', code: 'KeyH', altKey: true, bubbles: true }));
   const patch = sent.filter((m) => m.type === 'setSettings').at(-1);
   assert.equal(patch.patch.display.skipModes.scholar, 'hide', 'per-site skip mode persisted');
   assert.equal(document.documentElement.dataset.ptSkip, 'hide', 'applied locally right away');

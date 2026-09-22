@@ -58,6 +58,8 @@ export function renderBadge(entry, view) {
     if (entry.single) c.dataset.ptSingle = '1';
     if (label) c.dataset.ptLabel = label;
     else delete c.dataset.ptLabel;
+    if (view.state === 'error') c.dataset.ptError = '1'; // 只看关注 must never hide a failure the user has to see and retry
+    else delete c.dataset.ptError;
     if (label === 'skip' && !entry.noGray) c.dataset.ptSkipped = '1';
     else delete c.dataset.ptSkipped;
     if (label === 'follow' && !entry.noGray) c.dataset.ptAccent = '1';
@@ -138,7 +140,7 @@ export function setSkipMode(doc, mode) {
 
 /** Counts unique papers (arXiv lists carry the key on dt and dd) by effective label. */
 export function countLabels(doc) {
-  const counts = { follow: 0, normal: 0, skip: 0, pending: 0, total: 0 };
+  const counts = { follow: 0, normal: 0, skip: 0, pending: 0, error: 0, total: 0 };
   const seen = new Set();
   for (const el of doc.querySelectorAll('[data-pt-key]')) {
     const key = el.dataset.ptKey;
@@ -147,6 +149,7 @@ export function countLabels(doc) {
     counts.total += 1;
     const label = el.dataset.ptLabel;
     if (label in counts) counts[label] += 1;
+    else if (el.dataset.ptError) counts.error += 1;
     else counts.pending += 1;
   }
   return counts;
