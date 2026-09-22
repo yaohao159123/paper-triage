@@ -32,3 +32,19 @@ test('serialised state for a 10-paper batch stays well inside the 32k-token stat
   const bytes = JSON.stringify(buildTriageState(DEFAULT_PROFILE, papers)).length;
   assert.ok(bytes < 40_000, `state is ${bytes} bytes`);
 });
+
+test('tweet domain: reader profile + tweets state, same answer ids as papers so policy code is shared', async () => {
+  const { buildTweetState, buildTweetQuestions, DOMAINS, TWEET_LEVELS } = await import('../src/shared/questions.js');
+  const { DEFAULT_TWEET_PROFILE } = await import('../src/shared/profile.js');
+  const tweets = [normalizePaper({ title: 'x', abstract: 'Full tweet text', authors: 'A @a', quotedText: 'q', tweetId: '1', source: 'x' })];
+  const state = buildTweetState(DEFAULT_TWEET_PROFILE, tweets);
+  assert.deepEqual(Object.keys(state), ['reader', 'tweets']);
+  assert.deepEqual(state.tweets[0], { text: 'Full tweet text', author: 'A @a', quoted_text: 'q' });
+  assert.ok(state.reader.interests.length && state.reader.noise.length);
+  const q = buildTweetQuestions(2);
+  assert.deepEqual(Object.keys(q), ['paper_0_priority', 'paper_0_review', 'paper_1_priority', 'paper_1_review']);
+  assert.equal(q.paper_1_priority.criteria, TWEET_LEVELS);
+  assert.match(q.paper_1_priority.instructions.question, /`tweets\[1\]`/);
+  assert.equal(DOMAINS.tweet.chip, '推广');
+  assert.equal(tweets[0].key, 'tweet:1');
+});

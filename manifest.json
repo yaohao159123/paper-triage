@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "文献分诊 Paper Triage",
-  "version": "0.1.0",
-  "description": "用 TypeSafe Jev 判断文献值不值得读：关注 / 普通 / 跳过，跳过的文献变灰（Google Scholar、arXiv、PubMed）。",
-  "permissions": ["storage"],
+  "version": "0.2.0",
+  "description": "用 TypeSafe Jev 判断文献和推文值不值得读：关注 / 普通 / 跳过，跳过的整条变灰（Google Scholar、arXiv、PubMed、X/Twitter）。",
+  "permissions": ["storage", "clipboardWrite"],
   "host_permissions": ["https://api.typesafe.ai/*"],
   "background": { "service_worker": "src/background.js", "type": "module" },
   "action": { "default_popup": "src/popup/popup.html", "default_title": "文献分诊" },
@@ -18,7 +18,10 @@
         "https://scholar.google.de/*",
         "https://scholar.google.com.hk/*",
         "https://arxiv.org/*",
-        "https://pubmed.ncbi.nlm.nih.gov/*"
+        "https://pubmed.ncbi.nlm.nih.gov/*",
+        "https://x.com/*",
+        "https://twitter.com/*",
+        "https://mobile.twitter.com/*"
       ],
       "js": ["src/content/loader.js"],
       "css": ["src/content/badge.css"],
@@ -35,7 +38,10 @@
         "https://scholar.google.de/*",
         "https://scholar.google.com.hk/*",
         "https://arxiv.org/*",
-        "https://pubmed.ncbi.nlm.nih.gov/*"
+        "https://pubmed.ncbi.nlm.nih.gov/*",
+        "https://x.com/*",
+        "https://twitter.com/*",
+        "https://mobile.twitter.com/*"
       ]
     }
   ]

@@ -12,11 +12,15 @@
   button { width:100%; margin-top:6px; padding:7px 10px; border-radius:6px; border:1px solid #e5e7eb; background:#fff; font:inherit; cursor:pointer; }
   button.primary { background:#2563eb; border-color:#2563eb; color:#fff; }
   .status { color:#6b7280; min-height: 1.2em; margin-top:6px; }
+  label.field { display:flex; align-items:center; gap:6px; margin:6px 0; }
+  label.field select { flex:1; font:inherit; padding:3px 4px; }
 </style></head>
 <body><div class="wrap">
   <h1>文献分诊 <label class="toggle"><input id="enabled" type="checkbox"> 启用</label></h1>
+  <label class="field">文献画像 <select id="profile" aria-label="当前文献画像"></select></label>
   <div class="stats" id="stats">读取中…</div>
   <button id="rerun" class="primary">本页重新判读（跳过缓存）</button>
+  <button id="export">复制本页「关注」为 Markdown</button>
   <button id="options">设置：API Key · 研究画像 · 阈值</button>
   <div class="status" id="status"></div>
 </div>

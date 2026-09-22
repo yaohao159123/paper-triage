@@ -7,9 +7,38 @@ export const arxivAdapter = {
   id: 'arxiv',
   matches: (loc) => /(^|\.)arxiv\.org$/.test(loc.hostname),
   findEntries(root) {
-    return [...listEntries(root), ...searchEntries(root)];
+    const single = absEntry(root);
+    return single ? [single] : [...listEntries(root), ...searchEntries(root)];
   },
 };
+
+/** Single abstract page (/abs/ID): judge from the full abstract, badge on the title, never greyed. */
+function absEntry(root) {
+  const titleEl = root.querySelector('#abs h1.title, h1.title.mathjax');
+  const abs = root.querySelector('#abs blockquote.abstract, blockquote.abstract');
+  if (!titleEl || !abs) return null;
+  const meta = (name) => root.querySelector(`meta[name="${name}"]`)?.getAttribute('content') || '';
+  const arxivId = (meta('citation_arxiv_id').match(/\d{4}\.\d{4,5}/) || [''])[0] || ((root.defaultView?.location?.pathname || '').match(ABS_ID) || [, ''])[1];
+  const subject = root.querySelector('.subjects .primary-subject, td.subjects .primary-subject')?.textContent?.trim() || '';
+  return {
+    id: arxivId || 'abs',
+    single: true,
+    noGray: true,
+    containers: [titleEl],
+    mount: titleEl,
+    paper: {
+      source: 'arxiv',
+      title: textWithout(titleEl, '.descriptor, .pt-badge, .pt-review'),
+      abstract: textWithout(abs, '.descriptor'),
+      abstractFull: true,
+      authors: textWithout(root.querySelector('#abs .authors, .authors') || abs, '.descriptor'),
+      venue: subject ? `arXiv (${subject})` : 'arXiv',
+      year: (meta('citation_date').match(/(19|20)\d{2}/) || [''])[0] || (arxivId ? `20${arxivId.slice(0, 2)}` : ''),
+      url: arxivId ? `https://arxiv.org/abs/${arxivId}` : '',
+      arxivId,
+    },
+  };
+}
 
 function listEntries(root) {
   const out = [];

@@ -18,9 +18,11 @@ const CHROME = process.env.PT_CHROMIUM || `${homedir()}/Library/Caches/ms-playwr
 const HEADED = process.argv.includes('--headed');
 
 const PAGES = [
-  { host: 'scholar.google.com', path: '/scholar?hl=en&q=microwave+dielectric+properties+biomass', fixture: 'scholar.html', expectMin: 10 },
-  { host: 'arxiv.org', path: '/list/cond-mat.mtrl-sci/new', fixture: 'arxiv-list.html', expectMin: 45, scrollTo: 'dl' },
-  { host: 'pubmed.ncbi.nlm.nih.gov', path: '/?term=microwave+dielectric+biomass', fixture: 'pubmed.html', expectMin: 2 },
+  { host: 'scholar.google.com', path: '/scholar?hl=en&q=microwave+dielectric+properties+biomass', fixture: 'scholar.html', expectMin: 10, toolbar: true },
+  { host: 'arxiv.org', path: '/list/cond-mat.mtrl-sci/new', fixture: 'arxiv-list.html', expectMin: 45, scrollTo: 'dl', toolbar: true },
+  { host: 'arxiv.org', path: '/abs/2609.22268', pathPrefix: '/abs/', fixture: 'arxiv-abs.html', expectMin: 1, single: true },
+  { host: 'pubmed.ncbi.nlm.nih.gov', path: '/?term=microwave+dielectric+biomass', fixture: 'pubmed.html', expectMin: 2, toolbar: true },
+  { host: 'x.com', path: '/home', fixture: 'x-home.html', expectMin: 4, toolbar: true },
 ];
 
 function apiKey() {
@@ -41,7 +43,8 @@ function ensureCerts() {
 function startServer() {
   const server = https.createServer(ensureCerts(), (req, res) => {
     const host = (req.headers.host || '').split(':')[0];
-    const page = PAGES.find((p) => p.host === host);
+    const candidates = PAGES.filter((p) => p.host === host);
+    const page = candidates.find((p) => p.pathPrefix && req.url.startsWith(p.pathPrefix)) || candidates.find((p) => !p.pathPrefix);
     if (!page || req.url.startsWith('/scholar_') || /\.(js|css|png|ico|svg|woff2?)(\?|$)/.test(req.url)) {
       res.writeHead(404); res.end(); return;
     }
@@ -85,7 +88,7 @@ async function main() {
     ...(HEADED ? [] : ['--headless=new']),
     `--remote-debugging-port=${CDP_PORT}`, `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check',
     `--load-extension=${ROOT}`, `--disable-extensions-except=${ROOT}`,
-    `--host-resolver-rules=${PAGES.map((p) => `MAP ${p.host} 127.0.0.1:${PORT}`).join(', ')}`,
+    `--host-resolver-rules=${[...new Set(PAGES.map((p) => p.host))].map((h) => `MAP ${h} 127.0.0.1:${PORT}`).join(', ')}`,
     '--ignore-certificate-errors', '--window-size=1280,900', '--lang=en-US', 'about:blank',
   ];
   const chrome = spawn(CHROME, args, { stdio: 'ignore' });
@@ -130,15 +133,19 @@ async function main() {
         failed = true;
       }
       const ms = Date.now() - t0;
-      const sample = await evalIn(`[...document.querySelectorAll('.pt-badge')].slice(0, 6).map(b => b.textContent + ' | ' + (b.closest('[data-pt-key]')?.querySelector('.gs_rt, .list-title, .docsum-title')?.textContent || '').replace(/\\s+/g,' ').trim().slice(0, 70))`);
+      const sample = await evalIn(`[...document.querySelectorAll('.pt-badge')].slice(0, 6).map(b => b.textContent + (b.nextElementSibling?.classList.contains('pt-review') ? '+' + b.nextElementSibling.textContent : '') + ' | ' + (b.closest('[data-pt-key]')?.querySelector('.gs_rt, .list-title, .docsum-title, h1, [data-testid="tweetText"]')?.textContent || '').replace(/\\s+/g,' ').trim().slice(0, 70))`);
       const errTitles = await evalIn(`[...document.querySelectorAll('.pt-error')].slice(0, 3).map(b => b.title)`);
       await evalIn(page.scrollTo ? `document.querySelector(${JSON.stringify(page.scrollTo)})?.scrollIntoView()` : 'window.scrollTo(0, 0)');
       const shot = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false }, sessionId);
-      const file = path.join(OUT, `${page.host}.png`);
+      const file = path.join(OUT, `${page.host}${page.pathPrefix ? '-abs' : ''}.png`);
       writeFileSync(file, Buffer.from(shot.data, 'base64'));
-      const ok = counts.badges >= page.expectMin && counts.error === 0 && counts.loading === 0 && counts.skipped >= counts.skip; // arXiv greys dt+dd per entry
+      // toolbar + filter check on list pages; single pages must not grey or show a toolbar
+      const tb = await evalIn(`(() => { const t = document.querySelector('.pt-toolbar'); if (!t) return null; t.querySelector('[data-filter="hideskip"]').click(); const hidden = [...document.querySelectorAll('[data-pt-key][data-pt-label="skip"]')].filter(el => getComputedStyle(el).display === 'none').length; t.querySelector('[data-filter="all"]').click(); return { counts: t.querySelector('.pt-tb-counts').textContent, hiddenWhenFiltered: hidden }; })()`);
+      const toolbarOk = page.toolbar ? !!tb && tb.hiddenWhenFiltered === counts.skipped : tb === null;
+      const singleOk = !page.single || (counts.skipped === 0 && counts.badges === 1);
+      const ok = counts.badges >= page.expectMin && counts.error === 0 && counts.loading === 0 && counts.skipped >= counts.skip && toolbarOk && singleOk; // arXiv greys dt+dd per entry
       if (!ok) failed = true;
-      summary.push({ host: page.host, ok, ms, ...counts, screenshot: file, sample, errTitles });
+      summary.push({ host: page.host + (page.pathPrefix || ''), ok, ms, ...counts, toolbar: tb, screenshot: file, sample, errTitles });
       // 3. manual override on the first badge: click cycles, alt-click restores
       if (page.host === 'scholar.google.com' && counts.badges) {
         const before = await evalIn(`document.querySelector('.pt-badge').textContent`);

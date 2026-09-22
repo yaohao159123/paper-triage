@@ -4,10 +4,10 @@ import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { JSDOM } from 'jsdom';
 import { askJev } from '../src/shared/jev.js';
-import { buildTriageState, buildTriageQuestions } from '../src/shared/questions.js';
+import { buildTriageState, buildTriageQuestions, buildTweetState, buildTweetQuestions } from '../src/shared/questions.js';
 import { verdictFromAnswers, LABELS } from '../src/shared/policy.js';
 import { normalizePaper, chunk } from '../src/shared/paper.js';
-import { DEFAULT_PROFILE, DEFAULT_THRESHOLDS, DEFAULT_BATCH_SIZE } from '../src/shared/profile.js';
+import { DEFAULT_PROFILE, DEFAULT_TWEET_PROFILE, DEFAULT_THRESHOLDS, DEFAULT_BATCH_SIZE } from '../src/shared/profile.js';
 import { scholarAdapter } from '../src/content/adapters/scholar.js';
 
 function apiKey() {
@@ -35,7 +35,50 @@ const SAMPLES = [
   { expected: 'skip', title: 'Microwave hyperthermia applicator design for breast cancer treatment', abstract: '' },
 ];
 
+const TWEETS = [
+  { expected: 'follow', text: 'New write-up: how we cut agent context by 90% with per-tool-call pruning using a small typed-decision model instead of summaries. Code + evals: github.com/example/pruner' },
+  { expected: 'follow', text: 'SSAB reported the first commercial HYBRIT fossil-free steel delivery: 2,000 t of DRI reduced with hydrogen at Luleå, 1.2 kg CO2/t steel measured. Report PDF: ssab.com/hybrit-report' },
+  { expected: 'follow', text: 'Claude Code 2.1.278 changed how long Bash output is handled: anything over ~10k tokens is written to a file and the model only sees a 2 KB preview. If your hooks post-process tool output, read the file path from the event instead. Notes: example.dev/cc-278' },
+  { expected: 'follow', text: 'US CPI came in at 2.4% y/y vs 2.6% expected; core 2.9%. Fed funds futures now price 2 cuts by December (was 1). BLS table: bls.gov/cpi' },
+  { expected: 'normal', text: 'Honestly Claude Code is getting scary good. Wild times for software.' },
+  { expected: 'normal', text: 'Anyone else find that most LLM eval papers are unreproducible? Feels like the field needs a reset.' },
+  { expected: 'normal', text: 'Bitcoin back above 100k. Told you.' },
+  { expected: 'skip', text: '🚀🚀 $MOON is going 100x this week. Like + RT and I will send 0.1 ETH to 5 random followers. Link in bio 🔥' },
+  { expected: 'skip', text: 'Success is not final, failure is not fatal. Who needs to hear this today? 💪' },
+  { expected: 'skip', text: 'My 7-figure course on AI automation is 50% off for the next 24 hours. DM me "AI" to get the link.' },
+  { expected: 'skip', text: 'What a match last night!!! Arsenal 3-1, absolute scenes at the Emirates' },
+  { expected: 'skip', text: 'The senator just embarrassed himself on live TV again. Unbelievable. Retweet if you agree.' },
+];
+
+async function evalTweets(key) {
+  const samples = TWEETS.map((t) => ({ ...t, paper: normalizePaper({ title: t.text.slice(0, 120), abstract: t.text, source: 'x', tweetId: String(Math.random()).slice(2) }) }));
+  const rows = [];
+  let failures = 0;
+  for (const batch of chunk(samples, DEFAULT_BATCH_SIZE)) {
+    const state = buildTweetState(DEFAULT_TWEET_PROFILE, batch.map((s) => s.paper));
+    const questions = buildTweetQuestions(batch.length);
+    const t0 = performance.now();
+    const res = await askJev({ apiKey: key }, state, questions);
+    const ms = Math.round(performance.now() - t0);
+    batch.forEach((s, i) => {
+      const v = verdictFromAnswers(res.answers, i, DEFAULT_THRESHOLDS, { model: res.model });
+      const ok = s.expected === v.label ? 'ok' : 'MISS';
+      if (ok === 'MISS') failures += 1;
+      rows.push({ label: LABELS[v.label].zh, ok, expected: s.expected, skip: pct(v.probs.skip), normal: pct(v.probs.normal), follow: pct(v.probs.follow), promo: pct(v.reviewProb), text: s.text.slice(0, 70) });
+    });
+    console.log(`tweet batch of ${batch.length}: ${ms} ms, tokens ${res.usage?.input_tokens ?? '?'}`);
+  }
+  console.table(rows);
+  console.log(failures ? `${failures} tweet misses` : 'all tweet cases labelled as expected');
+  return failures;
+}
+
 async function main() {
+  if (process.argv.includes('--tweets')) {
+    const key = apiKey();
+    if (!key) throw new Error('no TYPESAFE_API_KEY');
+    process.exit((await evalTweets(key)) ? 1 : 0);
+  }
   const key = apiKey();
   if (!key) throw new Error('no TYPESAFE_API_KEY');
   let samples = SAMPLES.map((s) => ({ ...s, paper: normalizePaper(s) }));

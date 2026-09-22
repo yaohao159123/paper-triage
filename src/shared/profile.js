@@ -55,3 +55,82 @@ export function profileForState(profile) {
   }
   return out;
 }
+
+const PROFILE_FIELDS = ['summary', 'core_topics', 'methods', 'materials', 'not_interested'];
+
+/** FNV-1a over the judgment-relevant fields; verdict caches are namespaced by it so editing a profile invalidates them. */
+export function profileHash(profile) {
+  const p = profileForState(profile);
+  const text = JSON.stringify(PROFILE_FIELDS.map((k) => p[k] ?? null));
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i += 1) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(16).padStart(8, '0');
+}
+
+export function newProfileId() {
+  return `p${Date.now().toString(36)}${Math.floor(Math.random() * 1e4).toString(36)}`;
+}
+
+/** Migrates single-`profile` settings to `profiles` + `activeProfileId`; always returns a usable pair. */
+export function ensureProfiles(settings = {}) {
+  let profiles = Array.isArray(settings.profiles) ? settings.profiles.filter((p) => p && p.id) : [];
+  if (!profiles.length) {
+    profiles = [{ id: 'default', name: '默认画像', ...DEFAULT_PROFILE, ...(settings.profile || {}) }];
+  }
+  const activeProfileId = profiles.some((p) => p.id === settings.activeProfileId) ? settings.activeProfileId : profiles[0].id;
+  return { profiles, activeProfileId };
+}
+
+export function activeProfile(settings) {
+  const { profiles, activeProfileId } = ensureProfiles(settings);
+  return profiles.find((p) => p.id === activeProfileId) || profiles[0];
+}
+
+/* ---------- Tweets: a separate interest profile ---------- */
+
+export const DEFAULT_TWEET_PROFILE = {
+  summary:
+    'Reader is a PhD researcher in process metallurgy who also builds AI coding-agent tooling and a personal quant/crypto terminal. Wants tweets with concrete, actionable information, not opinions or hype.',
+  interests: [
+    'AI coding agents and LLM developer tooling (Claude Code, Codex, agent frameworks, MCP, prompt and context engineering, model releases and benchmarks)',
+    'quantitative trading, crypto markets, macro data releases, exchange and on-chain infrastructure',
+    'metallurgy, materials science, microwave processing, hydrogen ironmaking, biomass and decarbonisation research',
+    'scientific tooling: literature search, reference managers, simulation software, reproducible research workflows',
+    'open-source releases, datasets, papers and technical write-ups in the areas above',
+  ],
+  useful_signals: [
+    'announces or explains a new tool, model, library, dataset or paper with a link to the primary source',
+    'gives a concrete technique, configuration, benchmark number, or step-by-step how-to',
+    'reports a first-hand observation with specifics (what was tried, what happened, numbers)',
+    'summarises a long document or thread with the key facts preserved',
+  ],
+  noise: [
+    'advertising, giveaways, referral links, paid courses, engagement bait ("like if…", "who else…"), follower-farming threads',
+    'memes, jokes, personal life updates, sports, celebrity or political outrage',
+    'vague hype, motivational quotes, opinions with no concrete information, "this changes everything" with no details',
+    'crypto price shilling, pump calls, and airdrop spam',
+  ],
+};
+
+const TWEET_FIELDS = ['summary', 'interests', 'useful_signals', 'noise'];
+
+export function tweetProfileForState(profile) {
+  const p = { ...DEFAULT_TWEET_PROFILE, ...(profile || {}) };
+  const out = { summary: p.summary };
+  for (const k of TWEET_FIELDS.slice(1)) if (Array.isArray(p[k]) && p[k].length) out[k] = p[k];
+  return out;
+}
+
+export function tweetProfileHash(profile) {
+  const p = tweetProfileForState(profile);
+  const text = JSON.stringify(TWEET_FIELDS.map((k) => p[k] ?? null));
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i += 1) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return `t${h.toString(16).padStart(8, '0')}`;
+}

@@ -79,3 +79,56 @@ test('pubmed: docsum entries with DOI, year, snippet and mount before the title 
   assert.ok(entries[0].mount.classList.contains('docsum-content'));
   assert.equal(entries[1].paper.doi, '10.1016/j.jhep.2024.03.011');
 });
+
+test('arxiv abstract page: one single/noGray entry with the full abstract', () => {
+  const doc = fixture('arxiv-abs.html', 'https://arxiv.org/abs/2609.22268');
+  const entries = arxivAdapter.findEntries(doc);
+  assert.equal(entries.length, 1);
+  const e = entries[0];
+  assert.equal(e.single, true);
+  assert.equal(e.noGray, true);
+  assert.equal(e.paper.arxivId, '2609.22268');
+  assert.equal(e.paper.title, 'Efficient spectral Galerkin framework for nonlinear transient heat transfer in finite domains');
+  assert.equal(e.paper.abstractFull, true);
+  assert.ok(e.paper.abstract.length > 500, 'full abstract captured');
+  assert.doesNotMatch(e.paper.abstract, /^Abstract:/);
+  assert.match(e.paper.authors, /Andrieux/);
+  assert.equal(e.paper.year, '2026');
+  assert.equal(e.mount.tagName, 'H1');
+});
+
+test('pubmed article page: one single/noGray entry with DOI and full abstract', () => {
+  const doc = fixture('pubmed-article.html', 'https://pubmed.ncbi.nlm.nih.gov/38900001/');
+  const entries = pubmedAdapter.findEntries(doc);
+  assert.equal(entries.length, 1);
+  const e = entries[0];
+  assert.equal(e.single, true);
+  assert.equal(e.paper.doi, '10.1016/j.biortech.2025.130651');
+  assert.equal(e.paper.year, '2025');
+  assert.equal(e.paper.venue, 'Bioresource technology');
+  assert.match(e.paper.abstract, /^We measured/);
+  assert.equal(e.paper.abstractFull, true);
+  assert.equal(e.paper.url, 'https://pubmed.ncbi.nlm.nih.gov/38900001/');
+});
+
+test('x: timeline tweets with ids, author, quoted text; media-only tweets skipped', async () => {
+  const { xAdapter, tweetText } = await import('../src/content/adapters/x.js');
+  const doc = fixture('x-home.html', 'https://x.com/home');
+  assert.equal(pickAdapter(new URL('https://x.com/home')).id, 'x');
+  assert.equal(pickAdapter(new URL('https://twitter.com/home')).domain, 'tweet');
+  const entries = xAdapter.findEntries(doc);
+  assert.equal(entries.length, 4, 'media-only tweet has no text');
+  const [a, b, c] = entries;
+  assert.equal(a.paper.tweetId, '1001');
+  assert.equal(a.paper.authors, 'Andrej Karpathy @karpathy');
+  assert.match(a.paper.abstract, /per-tool-call pruning/);
+  assert.match(a.paper.abstract, /github\.com\/example\/pruner/);
+  assert.equal(a.paper.url, 'https://x.com/karpathy/status/1001');
+  assert.equal(a.paper.year, '2026');
+  assert.equal(a.mount.getAttribute('data-testid'), 'tweetText');
+  assert.equal(a.containers[0].tagName, 'ARTICLE');
+  assert.match(b.paper.abstract, /🔥$/, 'emoji image alt restored');
+  assert.equal(c.paper.quotedText, 'Quoted: Hybrit pilot data thread');
+  assert.doesNotMatch(c.paper.abstract, /Quoted:/, 'main text excludes the quoted tweet');
+  assert.equal(tweetText(doc.querySelector('[data-testid="tweetText"]')).length > 50, true);
+});

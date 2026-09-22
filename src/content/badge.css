@@ -31,3 +31,29 @@
 /* Global off switch (popup toggle) */
 html.pt-disabled .pt-badge { display: none !important; }
 html.pt-disabled .pt-skipped { opacity: 1 !important; filter: none !important; }
+
+/* Review chip next to the badge */
+.pt-review { display: inline-block; vertical-align: 2px; margin-right: 0.5em; padding: 0 0.55em; border-radius: 4px; background: #eef2ff; color: #4338ca; font: 600 11px/1.6 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; white-space: nowrap; }
+
+/* Filters driven by the toolbar (arXiv lists carry the label on both dt and dd) */
+html.pt-filter-follow [data-pt-key]:not([data-pt-label="follow"]) { display: none !important; }
+html.pt-filter-hideskip [data-pt-key][data-pt-label="skip"] { display: none !important; }
+html.pt-disabled [data-pt-key] { display: revert !important; }
+.pt-flash { outline: 2px solid #2e7d32; outline-offset: 4px; border-radius: 4px; transition: outline-color 1s ease; }
+
+/* Floating summary bar */
+.pt-toolbar { position: fixed; right: 16px; bottom: 16px; z-index: 2147483000; display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 12px; border: 1px solid #d1d5db; border-radius: 999px; background: rgba(255,255,255,0.96); box-shadow: 0 6px 20px rgba(0,0,0,0.12); backdrop-filter: blur(6px); font: 500 12px/1.4 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif; color: #1f2937; }
+.pt-toolbar .pt-tb-counts { white-space: nowrap; }
+.pt-toolbar .pt-c-follow { color: #2e7d32; } .pt-toolbar .pt-c-normal { color: #8a6a2b; } .pt-toolbar .pt-c-skip { color: #d32f2f; }
+.pt-toolbar .pt-tb-group { display: inline-flex; border: 1px solid #d1d5db; border-radius: 999px; overflow: hidden; }
+.pt-toolbar button { margin: 0; padding: 3px 9px; border: 0; background: transparent; color: #374151; font: inherit; cursor: pointer; white-space: nowrap; }
+.pt-toolbar button:hover { background: #f3f4f6; }
+.pt-toolbar .pt-tb-group button + button { border-left: 1px solid #e5e7eb; }
+.pt-toolbar .pt-tb-active { background: #1f2937; color: #fff; }
+.pt-toolbar .pt-tb-active:hover { background: #111827; }
+.pt-toolbar .pt-tb-collapse { padding: 2px 7px; color: #9ca3af; font-size: 14px; }
+.pt-toolbar.pt-tb-collapsed > :not(.pt-tb-collapse) { display: none; }
+.pt-toolbar.pt-tb-collapsed { padding: 4px 6px; }
+.pt-toolbar.pt-tb-collapsed .pt-tb-collapse { color: #2e7d32; font-size: 12px; font-weight: 600; }
+html.pt-disabled .pt-toolbar { display: none !important; }
+@media (max-width: 700px) { .pt-toolbar { left: 8px; right: 8px; bottom: 8px; flex-wrap: wrap; border-radius: 12px; } }

@@ -22,6 +22,9 @@ export function normalizePaper(raw) {
     doi: normalizeDoi(raw.doi),
     arxivId: normalizeArxivId(raw.arxivId),
     source: cleanText(raw.source, 40),
+    abstractFull: !!raw.abstractFull,
+    tweetId: cleanText(raw.tweetId, 40),
+    quotedText: cleanText(raw.quotedText, 600),
   };
   p.key = paperKey(p);
   return p;
@@ -50,10 +53,19 @@ export function titleSlug(title) {
 
 /** Stable key: DOI, else arXiv id, else slugged title. */
 export function paperKey(p) {
+  if (p.tweetId) return `tweet:${p.tweetId}`;
   if (p.doi) return `doi:${p.doi}`;
   if (p.arxivId) return `arxiv:${p.arxivId}`;
   return `title:${titleSlug(p.title)}`;
 }
+
+/** What the judgment was based on; a 'full' abstract later replaces a 'snippet'/'title' verdict. */
+export function basisOf(paper) {
+  if (paper.abstractFull && paper.abstract) return 'full';
+  return paper.abstract ? 'snippet' : 'title';
+}
+
+export const BASIS_RANK = { title: 0, snippet: 1, full: 2 };
 
 export function chunk(items, size) {
   if (!(size > 0)) throw new Error('chunk size must be > 0');

@@ -1,6 +1,6 @@
 # 文献分诊（Paper Triage）· 单功能轻量 spec
 
-> 2026-09-22 · 版本 0.1.0 · 形态：Chrome 扩展（Manifest V3，无构建步骤）· 判断引擎：TypeSafe Jev（System One）
+> 2026-09-22 · 版本 0.2.0 · 形态：Chrome 扩展（Manifest V3，无构建步骤）· 判断引擎：TypeSafe Jev（System One）
 
 ## 0. 一句话
 
@@ -22,9 +22,19 @@
 - 本地缓存（DOI / arXiv ID / 规范化标题为键），同一篇文献跨站点不重复判读。
 - 选项页：API Key、模型、研究画像（英文，五个字段）、阈值；弹窗：开关、本页重判、清缓存。
 
+**0.2.0 追加：**
+- **X / Twitter 时间线**：`article[data-testid="tweet"]` 逐条判「有用」；独立的「推文画像」（读者概括 / 感兴趣主题 / 有用信号 / 噪声），推文专用三级 Score + 「推广 / 引流」Noul（芯片显示「推广」）。虚拟化列表靠 MutationObserver 重扫，缓存键 `tweet:<status id>`。
+- **页面工具条**（右下角，可收起）：关注 / 普通 / 跳过 计数，筛选「全部 / 只看关注 / 隐藏跳过」（Alt+F / Alt+H），「↓ 关注」跳到下一条关注（Alt+N），「重判」。筛选状态按标签页记在 sessionStorage。
+- **多套文献画像**：选项页可新建 / 重命名 / 删除，弹窗一键切换当前生效画像；判读缓存按「画像内容哈希」分命名空间，改画像即自动失效，打开的页面自动重判。
+- **单篇详情页**：arXiv `/abs/` 与 PubMed 文章页用完整摘要判读（依据标为「完整摘要」），并覆盖列表页基于片段的旧判定；详情页只打徽章不灰化、不出工具条。
+- **综述 / 推广芯片**：Noul ≥ 0.5 时在徽章后显示「综述」（文献）或「推广」（推文）。
+- **导出**：弹窗「复制本页『关注』为 Markdown」（标题、作者、期刊年份、链接、DOI）。
+
 **Non-goals（1.0 不做）：**
 - 不进论文详情页、不读全文 PDF、不做摘要生成或推荐理由（Jev 不生成文本）。
-- 不做 Web of Science / Scopus / ScienceDirect（SPA，DOM 不稳定，2.0 再评估）。
+- 不做 Web of Science / Scopus / ScienceDirect（SPA，DOM 不稳定，后续再评估）。
+- 推文只判文本（含被引用推文的文本），不看图片 / 视频 / 链接落地页；不判无文字的纯图推文。
+- 不做「保存 / 文献卡」（已列为下一项，见 §8）。
 - 不做 Zotero 插件、不写回 SciFlow；核心判断模块（`src/shared/`）是纯 ES module，后续可直接复用到这两个宿主。
 - 不做账号同步、不做多用户；密钥只存本机 `chrome.storage.local`。
 - 不做 embedding / RAG / 记忆；画像是用户手写的结构化文本，判断全部交给 Jev + 代码阈值。
@@ -91,7 +101,8 @@
 - Google Scholar 反爬：扩展只读 DOM、不发请求，不触发风控。
 - Jev 对中文文献准确率低于英文（官方说明），画像与 criteria 全部用英文。
 - `--load-extension` 在 Chrome 137+ 品牌版被禁用，本地验证用 Playwright 自带 Chromium。
-- 待拍板：是否需要 Zotero 版本（2.0）。
+- 待拍板：是否需要 Zotero 版本。
+- **下一项（用户已提出）**：「保存」功能 + EAFD 文献卡（v3 样式：相关性标签 + DOI 链接标题 + 状态按钮 + 中文标题 + 年份·期刊 + 作者 + 可展开中英摘要 + 方法 / 结论 / 文章特点）。中文标题、翻译与三段正文需要生成式模型（Jev 只判定不生成）；本机可用 `ANTHROPIC_AUTH_TOKEN`。`card-template-v2.html` 本机未找到，需用户提供或按截图与规范重建。
 
 ## 9. Nielsen 自检
 

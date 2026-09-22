@@ -9,7 +9,7 @@
 <main class="wrap">
   <header>
     <h1>文献分诊 <span class="muted">Paper Triage · Jev</span></h1>
-    <p class="muted">在 Google Scholar / arXiv / PubMed 列表页，用 TypeSafe Jev 给每条文献打上 <span class="pill follow">关注</span><span class="pill normal">普通</span><span class="pill skip">跳过</span>，跳过的整条变灰。</p>
+    <p class="muted">在 Google Scholar / arXiv / PubMed 列表页和 X / Twitter 时间线，用 TypeSafe Jev 给每条打上 <span class="pill follow">关注</span><span class="pill normal">普通</span><span class="pill skip">跳过</span>，跳过的整条变灰。点击徽章改判，⌥+点击恢复 AI；页面右下角工具条可只看关注 / 隐藏跳过 / 跳到下一条（Alt+N / Alt+F / Alt+H）。</p>
   </header>
 
   <section>
@@ -27,7 +27,14 @@
   </section>
 
   <section>
-    <h2>2. 研究画像 <span class="muted">（英文效果最好；一行一条）</span></h2>
+    <h2>2. 文献画像 <span class="muted">（英文效果最好；一行一条；可保存多套并切换）</span></h2>
+    <div class="row">
+      <select id="profileSelect" aria-label="选择画像"></select>
+      <button id="profileNew" type="button" class="ghost">新建</button>
+      <button id="profileRename" type="button" class="ghost">重命名</button>
+      <button id="profileDelete" type="button" class="ghost danger">删除</button>
+      <span class="muted">当前生效的画像也可在弹窗里切换；换画像后文献会按新画像重判（各画像缓存独立）。</span>
+    </div>
     <label>一句话概括 summary
       <textarea id="summary" rows="3"></textarea>
     </label>
@@ -47,7 +54,24 @@
   </section>
 
   <section>
-    <h2>3. 判定阈值</h2>
+    <h2>3. 推文画像 <span class="muted">（X / Twitter 时间线用；英文；一行一条）</span></h2>
+    <label>读者概括 summary
+      <textarea id="t_summary" rows="3"></textarea>
+    </label>
+    <label>感兴趣的主题 interests
+      <textarea id="t_interests" rows="5"></textarea>
+    </label>
+    <label>「有用」的信号 useful_signals
+      <textarea id="t_useful_signals" rows="4"></textarea>
+    </label>
+    <label>噪声 noise <span class="muted">（命中即判「跳过」）</span>
+      <textarea id="t_noise" rows="4"></textarea>
+    </label>
+    <div class="row"><button id="resetTweetProfile" type="button" class="ghost">恢复默认推文画像</button></div>
+  </section>
+
+  <section>
+    <h2>4. 判定阈值</h2>
     <p class="muted">Jev 给每篇文献三档概率。P(关注) ≥ followMin → 关注；否则 P(跳过) ≥ skipMin → 跳过；其余 → 普通。skipMin 越高，灰掉的越少。</p>
     <div class="grid">
       <label>followMin <input id="followMin" type="number" min="0" max="1" step="0.05"></label>
@@ -57,7 +81,7 @@
   </section>
 
   <section>
-    <h2>4. 缓存</h2>
+    <h2>5. 缓存</h2>
     <div class="row">
       <span id="stats" class="status"></span>
       <button id="clearCache" type="button" class="ghost danger">清空判读缓存</button>
