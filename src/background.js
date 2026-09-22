@@ -2,6 +2,7 @@
 import { askJev, pingJev, JevError } from './shared/jev.js';
 import { DOMAINS } from './shared/questions.js';
 import { verdictFromAnswers } from './shared/policy.js';
+import { DEFAULT_DISPLAY } from './shared/profile.js';
 import { chunk, normalizePaper, basisOf, BASIS_RANK } from './shared/paper.js';
 import { DEFAULT_THRESHOLDS, DEFAULT_BATCH_SIZE, DEFAULT_MODEL_NAME, DEFAULT_TWEET_PROFILE, ensureProfiles, activeProfile, profileHash, tweetProfileHash } from './shared/profile.js';
 
@@ -23,6 +24,7 @@ export async function getSettings() {
   merged.activeProfileId = activeProfileId;
   merged.profile = activeProfile(merged); // the paper profile judgments use
   merged.tweetProfile = { ...DEFAULT_TWEET_PROFILE, ...(merged.tweetProfile || {}) };
+  merged.display = { ...DEFAULT_DISPLAY, ...(merged.display || {}) };
   return merged;
 }
 
@@ -92,11 +94,12 @@ export async function triage(rawPapers, { force = false, domain = 'paper' } = {}
     const results = await Promise.allSettled(
       batches.map(async (batch) => {
         const state = dom.buildState(profile, batch);
-        const questions = dom.buildQuestions(batch.length);
+        const reasonKeys = settings.display.reasons === false ? [] : Object.keys(dom.reasons);
+        const questions = dom.buildQuestions(batch.length, { reasons: reasonKeys.length > 0 });
         const res = await askJev({ apiKey: settings.apiKey, model: settings.model || DEFAULT_MODEL_NAME }, state, questions);
         const out = {};
         batch.forEach((p, i) => {
-          const v = verdictFromAnswers(res.answers, i, settings.thresholds, { model: res.model, ts: Date.now() });
+          const v = verdictFromAnswers(res.answers, i, settings.thresholds, { model: res.model, ts: Date.now() }, reasonKeys);
           v.manual = cached[p.key]?.manual || null;
           v.title = p.title;
           v.basis = basisOf(p);

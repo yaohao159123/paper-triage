@@ -33,6 +33,10 @@ export const DEFAULT_PROFILE = {
 
 export const DEFAULT_THRESHOLDS = { followMin: 0.5, skipMin: 0.6 };
 export const DEFAULT_BATCH_SIZE = 10;
+
+/** How verdicts are shown. skipMode: collapse (one line) | dim (grey) | hide. */
+export const DEFAULT_DISPLAY = { skipMode: 'collapse', reasons: true, followAccent: true, sortFollowFirst: false };
+export const SKIP_MODES = ['collapse', 'dim', 'hide'];
 export const DEFAULT_MODEL_NAME = 'jev-latest';
 
 /** Text-area friendly (one item per line) <-> array. */

@@ -1,21 +1,16 @@
-// Floating summary bar: counts, filters (只看关注 / 隐藏跳过), jump to next 关注, re-judge. Pure DOM.
+// Floating summary bar: counts, 跳过项显示方式, 只看关注, 关注置顶, next 关注, re-judge. Pure DOM.
 export const TOOLBAR_CLASS = 'pt-toolbar';
-export const FILTERS = ['all', 'follow', 'hideskip'];
-const FILTER_CLASS = { follow: 'pt-filter-follow', hideskip: 'pt-filter-hideskip' };
-const STORAGE_KEY = 'pt-filter';
+export const SKIP_MODE_LABELS = { collapse: '跳过：折叠', dim: '跳过：变灰', hide: '跳过：隐藏' };
+const FOLLOW_ONLY_CLASS = 'pt-filter-follow';
+const STORAGE_KEY = 'pt-follow-only';
 
-export function applyFilter(doc, mode) {
-  const root = doc.documentElement;
-  for (const cls of Object.values(FILTER_CLASS)) root.classList.remove(cls);
-  if (FILTER_CLASS[mode]) root.classList.add(FILTER_CLASS[mode]);
-  try { doc.defaultView?.sessionStorage?.setItem(STORAGE_KEY, mode); } catch { /* private mode etc. */ }
+export function setFollowOnly(doc, on) {
+  doc.documentElement.classList.toggle(FOLLOW_ONLY_CLASS, !!on);
+  try { doc.defaultView?.sessionStorage?.setItem(STORAGE_KEY, on ? '1' : '0'); } catch { /* private mode etc. */ }
 }
 
-export function savedFilter(doc) {
-  try {
-    const m = doc.defaultView?.sessionStorage?.getItem(STORAGE_KEY);
-    return FILTERS.includes(m) ? m : 'all';
-  } catch { return 'all'; }
+export function savedFollowOnly(doc) {
+  try { return doc.defaultView?.sessionStorage?.getItem(STORAGE_KEY) === '1'; } catch { return false; }
 }
 
 /** Scrolls to the next 关注 entry below the viewport top (wraps around); returns the element or null. */
@@ -35,7 +30,11 @@ export function jumpToNextFollow(doc) {
   return next;
 }
 
-export function mountToolbar(doc, handlers = {}) {
+/**
+ * handlers: { onSkipMode(mode), onFollowOnly(bool), onSort(bool), onRerun() }
+ * state: { skipMode, sortFollowFirst, sortable }
+ */
+export function mountToolbar(doc, handlers = {}, state = {}) {
   const existing = doc.querySelector(`.${TOOLBAR_CLASS}`);
   if (existing) existing.remove();
   const bar = doc.createElement('div');
@@ -44,42 +43,67 @@ export function mountToolbar(doc, handlers = {}) {
   bar.setAttribute('aria-label', '文献分诊');
   bar.innerHTML = `
     <span class="pt-tb-counts" aria-live="polite"></span>
-    <span class="pt-tb-group" role="group" aria-label="筛选">
-      <button type="button" data-filter="all">全部</button>
-      <button type="button" data-filter="follow">只看关注</button>
-      <button type="button" data-filter="hideskip">隐藏跳过</button>
-    </span>
+    <select class="pt-tb-skipmode" aria-label="跳过项显示方式" title="跳过的条目怎么显示">
+      ${Object.entries(SKIP_MODE_LABELS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
+    </select>
+    <button type="button" data-action="followonly" class="pt-tb-toggle" title="只显示「关注」（Alt+F）">只看关注</button>
+    ${state.sortable ? '<button type="button" data-action="sort" class="pt-tb-toggle" title="把「关注」排到前面，再点恢复原顺序（Alt+S）">关注置顶</button>' : ''}
     <button type="button" data-action="next" title="跳到下一条「关注」（Alt+N）">↓ 关注</button>
     <button type="button" data-action="rerun" title="本页全部重新判读（跳过缓存）">重判</button>
     <button type="button" data-action="collapse" class="pt-tb-collapse" title="收起">×</button>`;
   const counts = bar.querySelector('.pt-tb-counts');
-  const buttons = [...bar.querySelectorAll('[data-filter]')];
-  let mode = savedFilter(doc);
+  const select = bar.querySelector('.pt-tb-skipmode');
+  const followBtn = bar.querySelector('[data-action="followonly"]');
+  const sortBtn = bar.querySelector('[data-action="sort"]');
+  let followOnly = savedFollowOnly(doc);
+  let sortOn = !!state.sortFollowFirst;
 
-  function setFilter(next) {
-    mode = FILTERS.includes(next) ? next : 'all';
-    applyFilter(doc, mode);
-    for (const b of buttons) b.classList.toggle('pt-tb-active', b.dataset.filter === mode);
-    handlers.onFilter?.(mode);
+  function setSkipMode(mode) {
+    select.value = mode in SKIP_MODE_LABELS ? mode : 'collapse';
+  }
+  function setFollow(on) {
+    followOnly = !!on;
+    setFollowOnly(doc, followOnly);
+    followBtn.classList.toggle('pt-tb-active', followOnly);
+    handlers.onFollowOnly?.(followOnly);
+  }
+  function setSort(on) {
+    sortOn = !!on;
+    sortBtn?.classList.toggle('pt-tb-active', sortOn);
+    handlers.onSort?.(sortOn);
   }
   function update(c) {
     counts.innerHTML = `<b class="pt-c-follow">关注 ${c.follow}</b> · <span class="pt-c-normal">普通 ${c.normal}</span> · <span class="pt-c-skip">跳过 ${c.skip}</span>${c.pending ? ` · 判读中 ${c.pending}` : ''}`;
     bar.dataset.ptFollow = String(c.follow);
   }
+  select.addEventListener('change', () => handlers.onSkipMode?.(select.value));
   bar.addEventListener('click', (e) => {
     const b = e.target.closest('button');
     if (!b) return;
-    if (b.dataset.filter) setFilter(b.dataset.filter);
-    else if (b.dataset.action === 'next') jumpToNextFollow(doc);
-    else if (b.dataset.action === 'rerun') handlers.onRerun?.();
-    else if (b.dataset.action === 'collapse') {
+    const a = b.dataset.action;
+    if (a === 'followonly') setFollow(!followOnly);
+    else if (a === 'sort') setSort(!sortOn);
+    else if (a === 'next') jumpToNextFollow(doc);
+    else if (a === 'rerun') handlers.onRerun?.();
+    else if (a === 'collapse') {
       const collapsed = bar.classList.toggle('pt-tb-collapsed');
       b.textContent = collapsed ? '分诊' : '×';
       b.title = collapsed ? '展开文献分诊工具条' : '收起';
     }
   });
   doc.body.appendChild(bar);
-  setFilter(mode);
+  setSkipMode(state.skipMode || 'collapse');
+  setFollowOnly(doc, followOnly);
+  followBtn.classList.toggle('pt-tb-active', followOnly);
+  sortBtn?.classList.toggle('pt-tb-active', sortOn);
   update({ follow: 0, normal: 0, skip: 0, pending: 0 });
-  return { element: bar, update, setFilter, getFilter: () => mode };
+  return {
+    element: bar,
+    update,
+    setSkipMode,
+    setFollowOnly: setFollow,
+    setSort,
+    getFollowOnly: () => followOnly,
+    getSort: () => sortOn,
+  };
 }

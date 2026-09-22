@@ -14,9 +14,15 @@ test('state carries researcher profile and per-paper fields only', () => {
   assert.deepEqual(state.papers[1], { title: 'T2', abstract_or_snippet: '' });
 });
 
-test('questions: one score + one noul per paper, referencing papers[i] with backticks', () => {
+test('questions: one score + review noul + three reason nouls per paper, referencing papers[i] with backticks', () => {
   const q = buildTriageQuestions(3);
-  assert.equal(Object.keys(q).length, 6);
+  assert.equal(Object.keys(q).length, 15);
+  assert.equal(Object.keys(buildTriageQuestions(3, { reasons: false })).length, 6);
+  for (const k of ['topic', 'method', 'material']) {
+    assert.equal(q[`paper_2_${k}`].type, 'noul');
+    assert.match(q[`paper_2_${k}`].instructions, /`papers\[2\]`/);
+    assert.ok(q[`paper_2_${k}`].criteria.true && q[`paper_2_${k}`].criteria.false);
+  }
   assert.equal(q.paper_2_priority.type, 'score');
   assert.equal(q.paper_2_priority.criteria, PRIORITY_LEVELS);
   assert.equal(PRIORITY_LEVELS.length, 3);
@@ -42,7 +48,8 @@ test('tweet domain: reader profile + tweets state, same answer ids as papers so 
   assert.deepEqual(state.tweets[0], { text: 'Full tweet text', author: 'A @a', quoted_text: 'q' });
   assert.ok(state.reader.interests.length && state.reader.noise.length);
   const q = buildTweetQuestions(2);
-  assert.deepEqual(Object.keys(q), ['paper_0_priority', 'paper_0_review', 'paper_1_priority', 'paper_1_review']);
+  assert.deepEqual(Object.keys(q), ['paper_0_priority', 'paper_0_review', 'paper_0_interest', 'paper_0_concrete', 'paper_0_source', 'paper_1_priority', 'paper_1_review', 'paper_1_interest', 'paper_1_concrete', 'paper_1_source']);
+  assert.match(q.paper_1_source.instructions, /`tweets\[1\]`/);
   assert.equal(q.paper_1_priority.criteria, TWEET_LEVELS);
   assert.match(q.paper_1_priority.instructions.question, /`tweets\[1\]`/);
   assert.equal(DOMAINS.tweet.chip, '推广');

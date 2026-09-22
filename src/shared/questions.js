@@ -42,7 +42,26 @@ export function buildTriageState(profile, papers) {
   };
 }
 
-export function buildTriageQuestions(count) {
+/** Why a paper matters, split into the three profile dimensions so the UI can show "命中：课题 · 材料". */
+export const PAPER_REASONS = {
+  topic: {
+    zh: '课题',
+    instructions: (i) => `Is the main subject of \`papers[${i}]\` (judged from its title and abstract_or_snippet) one of \`researcher.core_topics\`, or a major part of one of them?`,
+    criteria: { true: 'The paper\'s main question or a major part of it is one of the listed core topics.', false: 'The paper only mentions a listed topic in passing, or addresses none of them.' },
+  },
+  method: {
+    zh: '方法',
+    instructions: (i) => `Does \`papers[${i}]\` use, develop, or evaluate one of \`researcher.methods\` (the measurement, simulation, or analysis techniques listed)?`,
+    criteria: { true: 'One of the listed techniques is used or studied in the paper.', false: 'None of the listed techniques appears, or only a generic mention.' },
+  },
+  material: {
+    zh: '材料',
+    instructions: (i) => `Does \`papers[${i}]\` study one of \`researcher.materials\` or a close equivalent of the same class (for example another lignocellulosic biomass, another steelmaking dust, another iron oxide)?`,
+    criteria: { true: 'A listed material or a same-class equivalent is a studied material in the paper.', false: 'The materials studied are unrelated to the list.' },
+  },
+};
+
+export function buildTriageQuestions(count, { reasons = true } = {}) {
   const q = {};
   for (let i = 0; i < count; i += 1) {
     q[`paper_${i}_priority`] = { type: 'score', instructions: priorityInstructions(i), criteria: PRIORITY_LEVELS };
@@ -51,6 +70,7 @@ export function buildTriageQuestions(count) {
       instructions: reviewInstructions(i),
       criteria: { true: 'Review, survey, overview, perspective or tutorial article.', false: 'Original research article, case study, dataset or method paper.' },
     };
+    if (reasons) for (const [k, r] of Object.entries(PAPER_REASONS)) q[`paper_${i}_${k}`] = { type: 'noul', instructions: r.instructions(i), criteria: r.criteria };
   }
   return q;
 }
@@ -91,7 +111,25 @@ export function buildTweetState(profile, tweets) {
   return { reader: tweetProfileForState(profile), tweets: tweets.map(tweetForState) };
 }
 
-export function buildTweetQuestions(count) {
+export const TWEET_REASONS = {
+  interest: {
+    zh: '主题',
+    instructions: (i) => `Is the topic of \`tweets[${i}]\` one of \`reader.interests\`?`,
+    criteria: { true: 'The tweet is about one of the listed interests.', false: 'The tweet is about something else.' },
+  },
+  concrete: {
+    zh: '具体',
+    instructions: (i) => `Does \`tweets[${i}]\` contain concrete information a reader could act on or verify: a specific technique, number, configuration, step, or first-hand observation with specifics?`,
+    criteria: { true: 'Contains at least one specific, checkable piece of information.', false: 'Only opinion, reaction, hype, or vague statements.' },
+  },
+  source: {
+    zh: '来源',
+    instructions: (i) => `Does \`tweets[${i}]\` link to or explicitly name a primary source such as a paper, code repository, dataset, documentation page, or official report?`,
+    criteria: { true: 'A primary source is linked or named.', false: 'No primary source; at most a vague reference.' },
+  },
+};
+
+export function buildTweetQuestions(count, { reasons = true } = {}) {
   const q = {};
   for (let i = 0; i < count; i += 1) {
     q[`paper_${i}_priority`] = { type: 'score', instructions: tweetInstructions(i), criteria: TWEET_LEVELS };
@@ -100,12 +138,19 @@ export function buildTweetQuestions(count) {
       instructions: tweetNoiseInstructions(i),
       criteria: { true: 'Mainly promotional, advertising, or engagement bait.', false: 'Mainly informational, even if it links to the author\'s own work.' },
     };
+    if (reasons) for (const [k, r] of Object.entries(TWEET_REASONS)) q[`paper_${i}_${k}`] = { type: 'noul', instructions: r.instructions(i), criteria: r.criteria };
   }
   return q;
 }
 
 /** Domain registry: which state/questions builder and chip text apply. */
 export const DOMAINS = {
-  paper: { buildState: buildTriageState, buildQuestions: buildTriageQuestions, chip: '综述', chipTitle: 'Jev 认为这是综述 / 评述类文章' },
-  tweet: { buildState: buildTweetState, buildQuestions: buildTweetQuestions, chip: '推广', chipTitle: 'Jev 认为这条主要是推广 / 引流内容' },
+  paper: { buildState: buildTriageState, buildQuestions: buildTriageQuestions, chip: '综述', chipTitle: 'Jev 认为这是综述 / 评述类文章', reasons: PAPER_REASONS },
+  tweet: { buildState: buildTweetState, buildQuestions: buildTweetQuestions, chip: '推广', chipTitle: 'Jev 认为这条主要是推广 / 引流内容', reasons: TWEET_REASONS },
 };
+
+/** Reason labels (key -> 中文) for a domain, used by the renderer. */
+export function reasonLabels(domain) {
+  const r = (DOMAINS[domain] || DOMAINS.paper).reasons;
+  return Object.fromEntries(Object.entries(r).map(([k, v]) => [k, v.zh]));
+}

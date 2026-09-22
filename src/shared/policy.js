@@ -26,22 +26,36 @@ export function probsFromScoreAnswer(answer) {
   return { skip: skip / sum, normal: normal / sum, follow: follow / sum };
 }
 
-/** Builds one verdict for paper i from a Jev answers map. */
-export function verdictFromAnswers(answers, i, thresholds, meta = {}) {
+export const UNSURE_MAX_PROB = 0.6;
+
+/** Builds one verdict for paper i from a Jev answers map. reasonKeys: extra Noul ids (e.g. ['topic','method','material']). */
+export function verdictFromAnswers(answers, i, thresholds, meta = {}, reasonKeys = []) {
   const scoreAns = answers[`paper_${i}_priority`];
   if (!scoreAns || scoreAns.probabilities == null) throw new Error(`missing answer paper_${i}_priority`);
   const probs = probsFromScoreAnswer(scoreAns);
   const reviewAns = answers[`paper_${i}_review`];
+  const reasons = {};
+  for (const k of reasonKeys) {
+    const a = answers[`paper_${i}_${k}`];
+    if (a && typeof a.noul === 'number') reasons[k] = a.noul;
+  }
   return {
     label: decideLabel(probs, thresholds),
     probs,
     score: num(scoreAns.score),
     confidence: num(scoreAns.confidence),
+    unsure: Math.max(probs.skip, probs.normal, probs.follow) < UNSURE_MAX_PROB,
     reviewProb: reviewAns && typeof reviewAns.noul === 'number' ? reviewAns.noul : null,
+    reasons: Object.keys(reasons).length ? reasons : null,
     model: meta.model || null,
     ts: meta.ts || Date.now(),
     manual: null,
   };
+}
+
+/** Reason keys whose probability clears the bar, in declaration order. */
+export function matchedReasons(verdict, min = 0.5) {
+  return Object.entries(verdict?.reasons || {}).filter(([, p]) => p >= min).map(([k]) => k);
 }
 
 /** The label the UI should show: manual override wins. */

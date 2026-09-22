@@ -71,7 +71,21 @@
   </section>
 
   <section>
-    <h2>4. 判定阈值</h2>
+    <h2>4. 显示方式 <span class="muted">（怎么隐藏没必要的、怎么突出必要的）</span></h2>
+    <label>跳过的条目
+      <select id="skipMode">
+        <option value="collapse">折叠成一行（默认）：只留标题，连续多条合并为「已折叠 N 条」，双击展开</option>
+        <option value="dim">变灰但保留全部内容</option>
+        <option value="hide">完全隐藏</option>
+      </select>
+    </label>
+    <label class="check"><input id="followAccent" type="checkbox"> 「关注」条目加左侧绿色色条和淡底色</label>
+    <label class="check"><input id="reasons" type="checkbox"> 在徽章旁显示命中维度（文献：课题 / 方法 / 材料；推文：主题 / 具体 / 来源）<span class="muted">（多 3 个 Jev 问题，成本约 +60%）</span></label>
+    <label class="check"><input id="sortFollowFirst" type="checkbox"> 默认「关注置顶」：列表页把关注排到前面（推文时间线不排序）</label>
+  </section>
+
+  <section>
+    <h2>5. 判定阈值</h2>
     <p class="muted">Jev 给每篇文献三档概率。P(关注) ≥ followMin → 关注；否则 P(跳过) ≥ skipMin → 跳过；其余 → 普通。skipMin 越高，灰掉的越少。</p>
     <div class="grid">
       <label>followMin <input id="followMin" type="number" min="0" max="1" step="0.05"></label>
@@ -81,7 +95,7 @@
   </section>
 
   <section>
-    <h2>5. 缓存</h2>
+    <h2>6. 缓存</h2>
     <div class="row">
       <span id="stats" class="status"></span>
       <button id="clearCache" type="button" class="ghost danger">清空判读缓存</button>

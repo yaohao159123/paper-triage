@@ -1,4 +1,4 @@
-import { DEFAULT_PROFILE, DEFAULT_TWEET_PROFILE, DEFAULT_THRESHOLDS, DEFAULT_BATCH_SIZE, DEFAULT_MODEL_NAME, linesToList, listToLines, newProfileId } from '../shared/profile.js';
+import { DEFAULT_PROFILE, DEFAULT_TWEET_PROFILE, DEFAULT_THRESHOLDS, DEFAULT_BATCH_SIZE, DEFAULT_MODEL_NAME, DEFAULT_DISPLAY, linesToList, listToLines, newProfileId } from '../shared/profile.js';
 
 const $ = (id) => document.getElementById(id);
 const LIST_FIELDS = ['core_topics', 'methods', 'materials', 'not_interested'];
@@ -74,6 +74,11 @@ async function load() {
   fillProfile({ ...DEFAULT_PROFILE, ...(profiles.find((p) => p.id === editingId) || {}) });
   renderProfileSelect();
   fillTweetProfile({ ...DEFAULT_TWEET_PROFILE, ...(s.tweetProfile || {}) });
+  const d = { ...DEFAULT_DISPLAY, ...(s.display || {}) };
+  $('skipMode').value = d.skipMode;
+  $('followAccent').checked = d.followAccent !== false;
+  $('reasons').checked = d.reasons !== false;
+  $('sortFollowFirst').checked = !!d.sortFollowFirst;
   $('followMin').value = s.thresholds?.followMin ?? DEFAULT_THRESHOLDS.followMin;
   $('skipMin').value = s.thresholds?.skipMin ?? DEFAULT_THRESHOLDS.skipMin;
   $('batchSize').value = s.batchSize ?? DEFAULT_BATCH_SIZE;
@@ -98,6 +103,7 @@ $('save').addEventListener('click', async () => {
     profiles,
     activeProfileId,
     tweetProfile: readTweetProfile(),
+    display: { skipMode: $('skipMode').value, followAccent: $('followAccent').checked, reasons: $('reasons').checked, sortFollowFirst: $('sortFollowFirst').checked },
     thresholds: { followMin: clamp01($('followMin').value, DEFAULT_THRESHOLDS.followMin), skipMin: clamp01($('skipMin').value, DEFAULT_THRESHOLDS.skipMin) },
     batchSize: Math.max(1, Math.min(20, Number($('batchSize').value) || DEFAULT_BATCH_SIZE)),
   };

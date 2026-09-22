@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { decideLabel, probsFromScoreAnswer, verdictFromAnswers, nextManualLabel, effectiveLabel } from '../src/shared/policy.js';
+import { decideLabel, probsFromScoreAnswer, verdictFromAnswers, nextManualLabel, effectiveLabel, matchedReasons } from '../src/shared/policy.js';
 
 test('decideLabel: follow wins when P(follow) >= followMin', () => {
   assert.equal(decideLabel({ skip: 0.1, normal: 0.3, follow: 0.6 }), 'follow');
@@ -46,4 +46,23 @@ test('manual override cycle and effective label', () => {
   assert.equal(effectiveLabel({ label: 'skip', manual: 'follow' }), 'follow');
   assert.equal(effectiveLabel({ label: 'skip', manual: null }), 'skip');
   assert.equal(effectiveLabel(null), null);
+});
+
+test('verdict carries reasons, matchedReasons filters by 0.5, unsure flags a flat distribution', () => {
+  const answers = {
+    paper_0_priority: { type: 'score', score: 1.1, confidence: 0.2, probabilities: { 0: 0.3, 1: 0.4, 2: 0.3 } },
+    paper_0_review: { type: 'noul', noul: 0.1 },
+    paper_0_topic: { type: 'noul', noul: 0.9 },
+    paper_0_method: { type: 'noul', noul: 0.2 },
+    paper_0_material: { type: 'noul', noul: 0.55 },
+  };
+  const v = verdictFromAnswers(answers, 0, undefined, {}, ['topic', 'method', 'material']);
+  assert.equal(v.label, 'normal');
+  assert.equal(v.unsure, true);
+  assert.deepEqual(v.reasons, { topic: 0.9, method: 0.2, material: 0.55 });
+  assert.deepEqual(matchedReasons(v), ['topic', 'material']);
+  const sure = verdictFromAnswers({ paper_0_priority: { probabilities: { 0: 0, 1: 0.1, 2: 0.9 } } }, 0);
+  assert.equal(sure.unsure, false);
+  assert.equal(sure.reasons, null);
+  assert.deepEqual(matchedReasons(sure), []);
 });

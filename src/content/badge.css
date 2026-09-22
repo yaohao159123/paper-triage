@@ -1,19 +1,9 @@
-/* 文献分诊 badges: pill, 1.5px outline, tinted fill — after the user's mockups (关注 green / 普通 brown / 跳过 red) */
+/* ===== 文献分诊 badges: pill, 1.5px outline, tinted fill (关注 green / 普通 brown / 跳过 red) ===== */
 .pt-badge {
-  display: inline-block;
-  box-sizing: border-box;
-  vertical-align: 2px;
-  margin: 0 0.5em 0 0;
-  padding: 0 0.7em;
-  border: 1.5px solid currentColor;
-  border-radius: 999px;
+  display: inline-block; box-sizing: border-box; vertical-align: 2px; margin: 0 0.5em 0 0; padding: 0 0.7em;
+  border: 1.5px solid currentColor; border-radius: 999px;
   font: 600 12px/1.6 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", Roboto, sans-serif;
-  letter-spacing: 0.03em;
-  white-space: nowrap;
-  cursor: pointer;
-  user-select: none;
-  text-decoration: none;
-  transition: opacity 0.15s ease;
+  letter-spacing: 0.03em; white-space: nowrap; cursor: pointer; user-select: none; text-decoration: none; transition: opacity 0.15s ease;
 }
 .pt-badge:hover { opacity: 0.85; }
 .pt-badge:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
@@ -23,37 +13,69 @@
 .pt-loading { color: #8a8a8a; background: #f3f3f3; border-style: dashed; cursor: progress; }
 .pt-error   { color: #b45309; background: #fff4e5; }
 .pt-manual::after { content: " ✎"; font-size: 0.85em; opacity: 0.75; }
+.pt-unsure { border-style: dashed; }          /* 模型把握不大：虚线 */
 
-/* Skipped entries: greyed but still readable on hover */
-.pt-skipped { opacity: 0.42 !important; filter: grayscale(1); transition: opacity 0.15s ease, filter 0.15s ease; }
-.pt-skipped:hover { opacity: 0.9 !important; filter: none; }
+/* chips next to the badge */
+.pt-review, .pt-reasons { display: inline-block; vertical-align: 2px; margin-right: 0.5em; white-space: nowrap; font: 500 11px/1.6 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; }
+.pt-review { padding: 0 0.55em; border-radius: 4px; background: #eef2ff; color: #4338ca; font-weight: 600; }
+.pt-reasons { color: #6b7280; letter-spacing: 0.02em; }
 
-/* Global off switch (popup toggle) */
-html.pt-disabled .pt-badge { display: none !important; }
-html.pt-disabled .pt-skipped { opacity: 1 !important; filter: none !important; }
+/* ===== 关注：左侧色条 + 极淡底色，让眼睛在滚动时先落到它 ===== */
+.pt-follow-item { box-shadow: inset 3px 0 0 #2e7d32; background: rgba(46, 125, 50, 0.045); }
+html.pt-no-accent .pt-follow-item { box-shadow: none; background: transparent; }
+html.pt-site-arxiv dt.pt-follow-item { box-shadow: inset 3px 0 0 #2e7d32; }
 
-/* Review chip next to the badge */
-.pt-review { display: inline-block; vertical-align: 2px; margin-right: 0.5em; padding: 0 0.55em; border-radius: 4px; background: #eef2ff; color: #4338ca; font: 600 11px/1.6 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; white-space: nowrap; }
+/* ===== 跳过：三种显示方式，html.pt-skip-<mode> ===== */
+/* dim: 变灰但保留全部内容 */
+html.pt-skip-dim .pt-skipped { opacity: 0.42 !important; filter: grayscale(1); transition: opacity 0.15s ease, filter 0.15s ease; }
+html.pt-skip-dim .pt-skipped:hover { opacity: 0.9 !important; filter: none; }
+/* hide: 完全不显示 */
+html.pt-skip-hide .pt-skipped { display: none !important; }
+/* collapse: 折叠成一行（标题 + 徽章），双击或点「已折叠 N 条」展开 */
+html.pt-skip-collapse .pt-skipped:not(.pt-expanded) { opacity: 0.55; filter: grayscale(1); }
+html.pt-skip-collapse .pt-skipped.pt-expanded { opacity: 0.8; }
+html.pt-skip-collapse.pt-site-scholar .pt-skipped:not(.pt-expanded) :is(.gs_a, .gs_rs, .gs_fl, .gs_ggs, .gs_or_svg) { display: none !important; }
+html.pt-skip-collapse.pt-site-scholar .pt-skipped:not(.pt-expanded) .gs_rt { font-size: 13px !important; font-weight: 400 !important; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.pt-skip-collapse.pt-site-scholar .pt-skipped:not(.pt-expanded) { margin: 0 !important; padding: 2px 0 !important; }
+html.pt-skip-collapse.pt-site-arxiv dt.pt-skipped:not(.pt-expanded) { display: none !important; }
+html.pt-skip-collapse.pt-site-arxiv dd.pt-skipped:not(.pt-expanded) :is(.list-authors, .list-comments, .list-subjects, .list-journal-ref, p) { display: none !important; }
+html.pt-skip-collapse.pt-site-arxiv dd.pt-skipped:not(.pt-expanded) { margin: 0 0 0 1.5em !important; }
+html.pt-skip-collapse.pt-site-arxiv dd.pt-skipped:not(.pt-expanded) .list-title { font-size: 13px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.pt-skip-collapse.pt-site-arxiv li.pt-skipped:not(.pt-expanded) :is(.authors, .abstract, .is-size-7, .tags) { display: none !important; }
+html.pt-skip-collapse.pt-site-pubmed .pt-skipped:not(.pt-expanded) :is(.docsum-citation, .full-view-snippet, .docsum-cited-by, .docsum-share) { display: none !important; }
+html.pt-skip-collapse.pt-site-pubmed .pt-skipped:not(.pt-expanded) .docsum-title { font-size: 13px !important; }
+html.pt-skip-collapse.pt-site-x article.pt-skipped:not(.pt-expanded) { max-height: 5.2em; overflow: hidden; }
+html.pt-skip-collapse .pt-skipped:not(.pt-expanded) .pt-badge { font-size: 11px; padding: 0 0.55em; }
 
-/* Filters driven by the toolbar (arXiv lists carry the label on both dt and dd) */
+/* run marker between collapsed runs */
+.pt-run { margin: 4px 0; padding: 2px 0; color: #6b7280; font: 500 12px/1.6 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; cursor: pointer; user-select: none; }
+.pt-run:hover { color: #1f2937; }
+html:not(.pt-skip-collapse) .pt-run { display: none !important; }
+
+/* 只看关注 */
 html.pt-filter-follow [data-pt-key]:not([data-pt-label="follow"]) { display: none !important; }
-html.pt-filter-hideskip [data-pt-key][data-pt-label="skip"] { display: none !important; }
-html.pt-disabled [data-pt-key] { display: revert !important; }
+html.pt-filter-follow .pt-run { display: none !important; }
 .pt-flash { outline: 2px solid #2e7d32; outline-offset: 4px; border-radius: 4px; transition: outline-color 1s ease; }
 
-/* Floating summary bar */
+/* ===== Floating summary bar ===== */
 .pt-toolbar { position: fixed; right: 16px; bottom: 16px; z-index: 2147483000; display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 12px; border: 1px solid #d1d5db; border-radius: 999px; background: rgba(255,255,255,0.96); box-shadow: 0 6px 20px rgba(0,0,0,0.12); backdrop-filter: blur(6px); font: 500 12px/1.4 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif; color: #1f2937; }
 .pt-toolbar .pt-tb-counts { white-space: nowrap; }
 .pt-toolbar .pt-c-follow { color: #2e7d32; } .pt-toolbar .pt-c-normal { color: #8a6a2b; } .pt-toolbar .pt-c-skip { color: #d32f2f; }
-.pt-toolbar .pt-tb-group { display: inline-flex; border: 1px solid #d1d5db; border-radius: 999px; overflow: hidden; }
-.pt-toolbar button { margin: 0; padding: 3px 9px; border: 0; background: transparent; color: #374151; font: inherit; cursor: pointer; white-space: nowrap; }
+.pt-toolbar select { font: inherit; color: inherit; padding: 2px 4px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; cursor: pointer; }
+.pt-toolbar button { margin: 0; padding: 3px 9px; border: 1px solid transparent; border-radius: 999px; background: transparent; color: #374151; font: inherit; cursor: pointer; white-space: nowrap; }
 .pt-toolbar button:hover { background: #f3f4f6; }
-.pt-toolbar .pt-tb-group button + button { border-left: 1px solid #e5e7eb; }
-.pt-toolbar .pt-tb-active { background: #1f2937; color: #fff; }
+.pt-toolbar .pt-tb-toggle { border-color: #d1d5db; }
+.pt-toolbar .pt-tb-active { background: #1f2937; border-color: #1f2937; color: #fff; }
 .pt-toolbar .pt-tb-active:hover { background: #111827; }
 .pt-toolbar .pt-tb-collapse { padding: 2px 7px; color: #9ca3af; font-size: 14px; }
 .pt-toolbar.pt-tb-collapsed > :not(.pt-tb-collapse) { display: none; }
 .pt-toolbar.pt-tb-collapsed { padding: 4px 6px; }
 .pt-toolbar.pt-tb-collapsed .pt-tb-collapse { color: #2e7d32; font-size: 12px; font-weight: 600; }
-html.pt-disabled .pt-toolbar { display: none !important; }
-@media (max-width: 700px) { .pt-toolbar { left: 8px; right: 8px; bottom: 8px; flex-wrap: wrap; border-radius: 12px; } }
+@media (max-width: 760px) { .pt-toolbar { left: 8px; right: 8px; bottom: 8px; flex-wrap: wrap; border-radius: 12px; } }
+
+/* ===== Global off switch (popup toggle) ===== */
+html.pt-disabled :is(.pt-badge, .pt-review, .pt-reasons, .pt-run, .pt-toolbar) { display: none !important; }
+html.pt-disabled .pt-skipped { opacity: 1 !important; filter: none !important; display: revert !important; }
+html.pt-disabled .pt-follow-item { box-shadow: none; background: transparent; }
+html.pt-disabled [data-pt-key] { display: revert !important; }
+html.pt-disabled.pt-skip-collapse .pt-skipped :is(.gs_a, .gs_rs, .gs_fl, .gs_ggs, .list-authors, .list-comments, .list-subjects, p, .docsum-citation, .full-view-snippet) { display: revert !important; }

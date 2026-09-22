@@ -1,10 +1,12 @@
-// DOM rendering of badges, review chips and the greyed-out state. No chrome.* calls here.
-import { LABELS, effectiveLabel } from '../shared/policy.js';
+// DOM rendering of badges, chips, reasons and per-entry state classes. No chrome.* calls here.
+import { LABELS, effectiveLabel, matchedReasons } from '../shared/policy.js';
 
 export const BADGE_CLASS = 'pt-badge';
 export const REVIEW_CLASS = 'pt-review';
+export const REASONS_CLASS = 'pt-reasons';
 export const REVIEW_MIN = 0.5;
-const STATE_CLASSES = ['pt-loading', 'pt-error', 'pt-follow', 'pt-normal', 'pt-skip', 'pt-manual'];
+const STATE_CLASSES = ['pt-loading', 'pt-error', 'pt-follow', 'pt-normal', 'pt-skip', 'pt-manual', 'pt-unsure'];
+const CONTAINER_CLASSES = ['pt-skipped', 'pt-follow-item', 'pt-normal-item'];
 
 export function ensureBadge(entry) {
   let badge = entry.mount.querySelector(`:scope > .${BADGE_CLASS}`);
@@ -19,13 +21,14 @@ export function ensureBadge(entry) {
   return badge;
 }
 
-/** view: {state:'loading'} | {state:'error', message} | {state:'verdict', verdict} */
+/** view: {state:'loading'} | {state:'error', message} | {state:'verdict', verdict, reasonLabels?} */
 export function renderBadge(entry, view) {
   const badge = ensureBadge(entry);
   badge.classList.remove(...STATE_CLASSES);
   badge.dataset.ptState = view.state;
   let label = null;
   let review = false;
+  let reasonsText = '';
   if (view.state === 'loading') {
     badge.classList.add('pt-loading');
     badge.textContent = '判读中…';
@@ -39,23 +42,34 @@ export function renderBadge(entry, view) {
     label = effectiveLabel(v) || 'normal';
     badge.classList.add(`pt-${label}`);
     if (v.manual) badge.classList.add('pt-manual');
+    if (v.unsure && !v.manual) badge.classList.add('pt-unsure');
     badge.textContent = LABELS[label].zh;
-    badge.title = tooltip(v);
+    badge.title = tooltip(v, view.reasonLabels);
     badge.dataset.ptLabel = label;
     review = typeof v.reviewProb === 'number' && v.reviewProb >= REVIEW_MIN;
+    if (label !== 'skip' && view.reasonLabels) {
+      reasonsText = matchedReasons(v).map((k) => view.reasonLabels[k] || k).join(' · ');
+    }
   }
   if (!label) delete badge.dataset.ptLabel;
-  renderReviewChip(badge, review, view.verdict);
+  renderChip(badge, review, view.verdict);
+  renderReasons(badge, reasonsText);
   for (const c of entry.containers) {
+    c.classList.remove(...CONTAINER_CLASSES);
     if (label) c.dataset.ptLabel = label;
     else delete c.dataset.ptLabel;
+    if (label === 'skip' && !entry.noGray) c.classList.add('pt-skipped');
+    if (label === 'follow' && !entry.noGray) c.classList.add('pt-follow-item');
   }
-  setSkipped(entry, label === 'skip' && !entry.noGray);
   return badge;
 }
 
-function renderReviewChip(badge, show, verdict) {
-  const existing = badge.nextElementSibling?.classList?.contains(REVIEW_CLASS) ? badge.nextElementSibling : null;
+function chipAfter(badge) {
+  return badge.nextElementSibling?.classList?.contains(REVIEW_CLASS) ? badge.nextElementSibling : null;
+}
+
+function renderChip(badge, show, verdict) {
+  const existing = chipAfter(badge);
   if (!show) {
     existing?.remove();
     return;
@@ -67,16 +81,34 @@ function renderReviewChip(badge, show, verdict) {
   if (!existing) badge.after(chip);
 }
 
-export function tooltip(v) {
+/** "命中：课题 · 材料" after the badge/chip; removed when empty. */
+function renderReasons(badge, text) {
+  const anchor = chipAfter(badge) || badge;
+  const existing = anchor.nextElementSibling?.classList?.contains(REASONS_CLASS) ? anchor.nextElementSibling : null;
+  if (!text) {
+    existing?.remove();
+    return;
+  }
+  const el = existing || badge.ownerDocument.createElement('span');
+  el.className = REASONS_CLASS;
+  el.textContent = `命中 ${text}`;
+  el.title = '与画像的哪些维度相符（Jev 分维度判定，≥50%）';
+  if (!existing) anchor.after(el);
+}
+
+export function tooltip(v, reasonLabels) {
   const lines = [];
   if (v.probs) {
     const p = v.probs;
-    lines.push(`AI 判读：关注 ${pct(p.follow)} · 普通 ${pct(p.normal)} · 跳过 ${pct(p.skip)}`);
+    lines.push(`AI 判读：关注 ${pct(p.follow)} · 普通 ${pct(p.normal)} · 跳过 ${pct(p.skip)}${v.unsure ? '（把握不大）' : ''}`);
+    if (v.reasons && reasonLabels) {
+      lines.push(`维度：${Object.entries(v.reasons).map(([k, x]) => `${reasonLabels[k] || k} ${pct(x)}`).join(' · ')}`);
+    }
     if (typeof v.reviewProb === 'number' && v.reviewProb >= REVIEW_MIN) lines.push(`${v.chipTitle || '可能是综述 / 评述类文章'}（${pct(v.reviewProb)}）`);
     if (v.basis) lines.push(`依据：${{ full: '完整摘要', snippet: '标题 + 摘要片段', title: '仅标题' }[v.basis] || v.basis}`);
   }
   if (v.manual) lines.push(`当前为手动改判（AI 原判：${v.label ? LABELS[v.label].zh : '无'}）`);
-  lines.push('点击改判：关注 → 普通 → 跳过 循环；⌥/Alt + 点击恢复 AI 判定');
+  lines.push('点击改判：关注 → 普通 → 跳过 循环；⌥/Alt + 点击恢复 AI 判定；双击折叠项可展开');
   return lines.join('\n');
 }
 
@@ -86,6 +118,12 @@ export function setSkipped(entry, skipped) {
 
 export function setDisabled(doc, disabled) {
   doc.documentElement.classList.toggle('pt-disabled', !!disabled);
+}
+
+/** html.pt-skip-<mode> drives how skipped entries look: collapse | dim | hide. */
+export function setSkipMode(doc, mode) {
+  const root = doc.documentElement;
+  for (const m of ['collapse', 'dim', 'hide']) root.classList.toggle(`pt-skip-${m}`, m === mode);
 }
 
 /** Counts unique papers (arXiv lists carry the key on dt and dd) by effective label. */

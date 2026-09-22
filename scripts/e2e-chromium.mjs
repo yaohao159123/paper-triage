@@ -19,7 +19,7 @@ const HEADED = process.argv.includes('--headed');
 
 const PAGES = [
   { host: 'scholar.google.com', path: '/scholar?hl=en&q=microwave+dielectric+properties+biomass', fixture: 'scholar.html', expectMin: 10, toolbar: true },
-  { host: 'arxiv.org', path: '/list/cond-mat.mtrl-sci/new', fixture: 'arxiv-list.html', expectMin: 45, scrollTo: 'dl', toolbar: true },
+  { host: 'arxiv.org', path: '/list/cond-mat.mtrl-sci/new', fixture: 'arxiv-list.html', expectMin: 45, scrollTo: 'dl', toolbar: true, expectRuns: true },
   { host: 'arxiv.org', path: '/abs/2609.22268', pathPrefix: '/abs/', fixture: 'arxiv-abs.html', expectMin: 1, single: true },
   { host: 'pubmed.ncbi.nlm.nih.gov', path: '/?term=microwave+dielectric+biomass', fixture: 'pubmed.html', expectMin: 2, toolbar: true },
   { host: 'x.com', path: '/home', fixture: 'x-home.html', expectMin: 4, toolbar: true },
@@ -120,7 +120,7 @@ async function main() {
       const { targetId } = await cdp.send('Target.createTarget', { url });
       const { sessionId } = await cdp.send('Target.attachToTarget', { targetId, flatten: true });
       await cdp.send('Page.enable', {}, sessionId);
-      const evalIn = async (expression) => (await cdp.send('Runtime.evaluate', { expression, returnByValue: true }, sessionId)).result.value;
+      const evalIn = async (expression) => (await cdp.send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, sessionId)).result.value;
       const t0 = Date.now();
       let counts;
       try {
@@ -139,9 +139,23 @@ async function main() {
       const shot = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false }, sessionId);
       const file = path.join(OUT, `${page.host}${page.pathPrefix ? '-abs' : ''}.png`);
       writeFileSync(file, Buffer.from(shot.data, 'base64'));
-      // toolbar + filter check on list pages; single pages must not grey or show a toolbar
-      const tb = await evalIn(`(() => { const t = document.querySelector('.pt-toolbar'); if (!t) return null; t.querySelector('[data-filter="hideskip"]').click(); const hidden = [...document.querySelectorAll('[data-pt-key][data-pt-label="skip"]')].filter(el => getComputedStyle(el).display === 'none').length; t.querySelector('[data-filter="all"]').click(); return { counts: t.querySelector('.pt-tb-counts').textContent, hiddenWhenFiltered: hidden }; })()`);
-      const toolbarOk = page.toolbar ? !!tb && tb.hiddenWhenFiltered === counts.skipped : tb === null;
+      // toolbar checks on list pages: collapse markers, hide mode hides skipped entries, reasons shown, sort moves 关注 first
+      const tb = await evalIn(`(async () => {
+        const t = document.querySelector('.pt-toolbar'); if (!t) return null;
+        const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+        const skipped = () => [...document.querySelectorAll('[data-pt-key][data-pt-label="skip"]')];
+        const out = { counts: t.querySelector('.pt-tb-counts').textContent, runs: document.querySelectorAll('.pt-run').length, reasons: document.querySelectorAll('.pt-reasons').length, collapsed: document.documentElement.classList.contains('pt-skip-collapse') };
+        const sel = t.querySelector('.pt-tb-skipmode'); sel.value = 'hide'; sel.dispatchEvent(new Event('change')); await sleep(400);
+        out.hiddenInHideMode = skipped().filter(el => getComputedStyle(el).display === 'none').length;
+        sel.value = 'collapse'; sel.dispatchEvent(new Event('change')); await sleep(400);
+        out.hiddenInCollapseMode = skipped().filter(el => getComputedStyle(el).display === 'none').length;
+        const sortBtn = t.querySelector('[data-action="sort"]');
+        if (sortBtn) { sortBtn.click(); await sleep(400); const order = [...document.querySelectorAll('[data-pt-key]')].map(el => el.dataset.ptLabel); out.sortedFirst = order[0]; out.sortedFollowBeforeSkip = order.lastIndexOf('follow') < (order.indexOf('skip') === -1 ? Infinity : order.indexOf('skip')); sortBtn.click(); await sleep(300); }
+        return out;
+      })()`);
+      const toolbarOk = page.toolbar
+        ? !!tb && tb.collapsed && tb.hiddenInHideMode === counts.skipped && (!page.expectRuns || tb.runs >= 1) && (page.host === 'x.com' || tb.sortedFollowBeforeSkip !== false)
+        : tb === null;
       const singleOk = !page.single || (counts.skipped === 0 && counts.badges === 1);
       const ok = counts.badges >= page.expectMin && counts.error === 0 && counts.loading === 0 && counts.skipped >= counts.skip && toolbarOk && singleOk; // arXiv greys dt+dd per entry
       if (!ok) failed = true;

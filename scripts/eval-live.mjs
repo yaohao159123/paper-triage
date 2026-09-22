@@ -5,7 +5,7 @@ import { homedir } from 'node:os';
 import { JSDOM } from 'jsdom';
 import { askJev } from '../src/shared/jev.js';
 import { buildTriageState, buildTriageQuestions, buildTweetState, buildTweetQuestions } from '../src/shared/questions.js';
-import { verdictFromAnswers, LABELS } from '../src/shared/policy.js';
+import { verdictFromAnswers, LABELS, matchedReasons } from '../src/shared/policy.js';
 import { normalizePaper, chunk } from '../src/shared/paper.js';
 import { DEFAULT_PROFILE, DEFAULT_TWEET_PROFILE, DEFAULT_THRESHOLDS, DEFAULT_BATCH_SIZE } from '../src/shared/profile.js';
 import { scholarAdapter } from '../src/content/adapters/scholar.js';
@@ -61,10 +61,10 @@ async function evalTweets(key) {
     const res = await askJev({ apiKey: key }, state, questions);
     const ms = Math.round(performance.now() - t0);
     batch.forEach((s, i) => {
-      const v = verdictFromAnswers(res.answers, i, DEFAULT_THRESHOLDS, { model: res.model });
+      const v = verdictFromAnswers(res.answers, i, DEFAULT_THRESHOLDS, { model: res.model }, ['interest', 'concrete', 'source']);
       const ok = s.expected === v.label ? 'ok' : 'MISS';
       if (ok === 'MISS') failures += 1;
-      rows.push({ label: LABELS[v.label].zh, ok, expected: s.expected, skip: pct(v.probs.skip), normal: pct(v.probs.normal), follow: pct(v.probs.follow), promo: pct(v.reviewProb), text: s.text.slice(0, 70) });
+      rows.push({ label: LABELS[v.label].zh, ok, expected: s.expected, skip: pct(v.probs.skip), normal: pct(v.probs.normal), follow: pct(v.probs.follow), promo: pct(v.reviewProb), 主题: pct(v.reasons.interest), 具体: pct(v.reasons.concrete), 来源: pct(v.reasons.source), text: s.text.slice(0, 55) });
     });
     console.log(`tweet batch of ${batch.length}: ${ms} ms, tokens ${res.usage?.input_tokens ?? '?'}`);
   }
@@ -95,10 +95,10 @@ async function main() {
     const res = await askJev({ apiKey: key }, state, questions);
     const ms = Math.round(performance.now() - t0);
     batch.forEach((s, i) => {
-      const v = verdictFromAnswers(res.answers, i, DEFAULT_THRESHOLDS, { model: res.model });
+      const v = verdictFromAnswers(res.answers, i, DEFAULT_THRESHOLDS, { model: res.model }, ['topic', 'method', 'material']);
       const ok = s.expected == null ? '' : s.expected === v.label ? 'ok' : 'MISS';
       if (ok === 'MISS') failures += 1;
-      rows.push({ label: LABELS[v.label].zh, ok, expected: s.expected || '-', skip: pct(v.probs.skip), normal: pct(v.probs.normal), follow: pct(v.probs.follow), conf: v.confidence.toFixed(2), review: v.reviewProb == null ? '-' : pct(v.reviewProb), title: s.paper.title.slice(0, 70) });
+      rows.push({ label: LABELS[v.label].zh, ok, expected: s.expected || '-', skip: pct(v.probs.skip), normal: pct(v.probs.normal), follow: pct(v.probs.follow), unsure: v.unsure ? '?' : '', review: v.reviewProb == null ? '-' : pct(v.reviewProb), 课题: pct(v.reasons.topic), 方法: pct(v.reasons.method), 材料: pct(v.reasons.material), title: s.paper.title.slice(0, 60) });
     });
     console.log(`batch of ${batch.length}: ${ms} ms, model ${res.model}, tokens ${res.usage?.input_tokens ?? '?'}`);
   }
