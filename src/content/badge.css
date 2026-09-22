@@ -57,20 +57,21 @@ html[data-pt-follow-only] [data-pt-key]:not([data-pt-label="follow"]) { display:
 html[data-pt-follow-only] .pt-run { display: none !important; }
 [data-pt-flash] { outline: 2px solid #2e7d32; outline-offset: 4px; border-radius: 4px; transition: outline-color 1s ease; }
 
-/* ===== Floating summary bar ===== */
-.pt-toolbar { position: fixed; right: 16px; bottom: 16px; z-index: 2147483000; display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 12px; border: 1px solid #d1d5db; border-radius: 999px; background: rgba(255,255,255,0.96); box-shadow: 0 6px 20px rgba(0,0,0,0.12); backdrop-filter: blur(6px); font: 500 12px/1.4 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif; color: #1f2937; }
-.pt-toolbar .pt-tb-counts { white-space: nowrap; }
+/* ===== Floating summary bar（紧凑：11px 字号、窄内边距、闲置时半透明） ===== */
+.pt-toolbar { position: fixed; right: 12px; bottom: 12px; z-index: 2147483000; display: flex; align-items: center; gap: 4px; padding: 3px 4px 3px 9px; border: 1px solid #d1d5db; border-radius: 999px; background: rgba(255,255,255,0.96); box-shadow: 0 3px 12px rgba(0,0,0,0.12); backdrop-filter: blur(6px); font: 500 11px/1.3 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif; color: #1f2937; opacity: 0.72; transition: opacity 0.15s ease; }
+.pt-toolbar:hover, .pt-toolbar:focus-within { opacity: 1; }
+.pt-toolbar .pt-tb-counts { white-space: nowrap; margin-right: 3px; }
 .pt-toolbar .pt-c-follow { color: #2e7d32; } .pt-toolbar .pt-c-normal { color: #8a6a2b; } .pt-toolbar .pt-c-skip { color: #d32f2f; }
-.pt-toolbar select { font: inherit; color: inherit; padding: 2px 4px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; cursor: pointer; }
-.pt-toolbar button { margin: 0; padding: 3px 9px; border: 1px solid transparent; border-radius: 999px; background: transparent; color: #374151; font: inherit; cursor: pointer; white-space: nowrap; }
+.pt-toolbar select { font: inherit; color: inherit; padding: 1px 2px; max-width: 8.5em; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; cursor: pointer; }
+.pt-toolbar button { margin: 0; padding: 2px 7px; border: 1px solid transparent; border-radius: 999px; background: transparent; color: #374151; font: inherit; cursor: pointer; white-space: nowrap; line-height: 1.3; }
 .pt-toolbar button:hover { background: #f3f4f6; }
 .pt-toolbar .pt-tb-toggle { border-color: #d1d5db; }
 .pt-toolbar .pt-tb-active { background: #1f2937; border-color: #1f2937; color: #fff; }
 .pt-toolbar .pt-tb-active:hover { background: #111827; }
-.pt-toolbar .pt-tb-collapse { padding: 2px 7px; color: #9ca3af; font-size: 14px; }
+.pt-toolbar .pt-tb-collapse { padding: 0 5px; color: #9ca3af; font-size: 13px; }
 .pt-toolbar.pt-tb-collapsed > :not(.pt-tb-collapse) { display: none; }
-.pt-toolbar.pt-tb-collapsed { padding: 4px 6px; }
-.pt-toolbar.pt-tb-collapsed .pt-tb-collapse { color: #2e7d32; font-size: 12px; font-weight: 600; }
+.pt-toolbar.pt-tb-collapsed { padding: 2px 5px; }
+.pt-toolbar.pt-tb-collapsed .pt-tb-collapse { color: #2e7d32; font-size: 11px; font-weight: 600; }
 @media (max-width: 760px) { .pt-toolbar { left: 8px; right: 8px; bottom: 8px; flex-wrap: wrap; border-radius: 12px; } }
 
 /* ===== Global off switch (popup toggle) ===== */

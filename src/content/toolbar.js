@@ -1,6 +1,6 @@
 // Floating summary bar: counts, 跳过项显示方式, 只看关注, 关注置顶, next 关注, re-judge. Pure DOM.
 export const TOOLBAR_CLASS = 'pt-toolbar';
-export const SKIP_MODE_LABELS = { collapse: '跳过：折叠', dim: '跳过：变灰', hide: '跳过：隐藏' };
+export const SKIP_MODE_LABELS = { collapse: '折叠', dim: '变灰', hide: '隐藏' };
 const STORAGE_KEY = 'pt-follow-only';
 
 export function setFollowOnly(doc, on) {
@@ -43,12 +43,12 @@ export function mountToolbar(doc, handlers = {}, state = {}) {
   bar.setAttribute('aria-label', '文献分诊');
   bar.innerHTML = `
     <span class="pt-tb-counts" aria-live="polite"></span>
-    <select class="pt-tb-skipmode" aria-label="跳过项显示方式" title="跳过的条目怎么显示">
+    <select class="pt-tb-skipmode" aria-label="跳过项显示方式" title="跳过的条目怎么显示：折叠 / 变灰 / 隐藏">
       ${Object.entries(SKIP_MODE_LABELS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
     </select>
     <button type="button" data-action="followonly" class="pt-tb-toggle" title="只显示「关注」（Alt+F）">只看关注</button>
     ${state.sortable ? '<button type="button" data-action="sort" class="pt-tb-toggle" title="把「关注」排到前面，再点恢复原顺序（Alt+S）">关注置顶</button>' : ''}
-    <button type="button" data-action="next" title="跳到下一条「关注」（Alt+N）">↓ 关注</button>
+    <button type="button" data-action="next" title="跳到下一条「关注」（Alt+N）">↓</button>
     <button type="button" data-action="rerun" title="本页全部重新判读（跳过缓存）">重判</button>
     <button type="button" data-action="collapse" class="pt-tb-collapse" title="收起">×</button>`;
   const counts = bar.querySelector('.pt-tb-counts');
