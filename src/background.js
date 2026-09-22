@@ -129,10 +129,12 @@ function profileFor(settings, domain) {
   return settings.profile;
 }
 
+/** Bump when the judgment or policy changes so older cached verdicts are ignored (not deleted). */
+export const POLICY_VERSION = 2;
+
 function namespaceFor(profile, domain) {
-  if (domain === 'tweet') return tweetProfileHash(profile);
-  if (domain === 'xhs') return xhsProfileHash(profile);
-  return profileHash(profile);
+  const h = domain === 'tweet' ? tweetProfileHash(profile) : domain === 'xhs' ? xhsProfileHash(profile) : profileHash(profile);
+  return `${h}-p${POLICY_VERSION}`;
 }
 
 async function override(key, manual, domain = 'paper') {
@@ -153,7 +155,7 @@ async function clearCache() {
 
 async function stats() {
   const all = await chrome.storage.local.get(null);
-  const prefix = `${CACHE_PREFIX}${profileHash((await getSettings()).profile)}:`;
+  const prefix = `${CACHE_PREFIX}${namespaceFor((await getSettings()).profile, 'paper')}:`;
   const counts = { total: 0, follow: 0, normal: 0, skip: 0, manual: 0 };
   for (const [k, v] of Object.entries(all)) {
     if (!k.startsWith(prefix)) continue;

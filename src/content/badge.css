@@ -21,41 +21,41 @@
 .pt-reasons { color: #6b7280; letter-spacing: 0.02em; }
 
 /* ===== 关注：左侧色条 + 极淡底色，让眼睛在滚动时先落到它 ===== */
-.pt-follow-item { box-shadow: inset 3px 0 0 #2e7d32; background: rgba(46, 125, 50, 0.045); }
-html.pt-no-accent .pt-follow-item { box-shadow: none; background: transparent; }
-html.pt-site-arxiv dt.pt-follow-item { box-shadow: inset 3px 0 0 #2e7d32; }
+[data-pt-accent] { box-shadow: inset 3px 0 0 #2e7d32; background: rgba(46, 125, 50, 0.045); }
+html[data-pt-no-accent] [data-pt-accent] { box-shadow: none; background: transparent; }
+html[data-pt-site="arxiv"] dt[data-pt-accent] { box-shadow: inset 3px 0 0 #2e7d32; }
 
-/* ===== 跳过：三种显示方式，html.pt-skip-<mode> ===== */
+/* ===== 跳过：三种显示方式，html[data-pt-skip="<mode>"]（状态全用 data-* 属性：React 站点会重写 class） ===== */
 /* dim: 变灰但保留全部内容 */
-html.pt-skip-dim .pt-skipped { opacity: 0.42 !important; filter: grayscale(1); transition: opacity 0.15s ease, filter 0.15s ease; }
-html.pt-skip-dim .pt-skipped:hover { opacity: 0.9 !important; filter: none; }
+html[data-pt-skip="dim"] [data-pt-skipped] { opacity: 0.42 !important; filter: grayscale(1); transition: opacity 0.15s ease, filter 0.15s ease; }
+html[data-pt-skip="dim"] [data-pt-skipped]:hover { opacity: 0.9 !important; filter: none; }
 /* hide: 完全不显示 */
-html.pt-skip-hide .pt-skipped { display: none !important; }
+html[data-pt-skip="hide"] [data-pt-skipped] { display: none !important; }
 /* collapse: 折叠成一行（标题 + 徽章），双击或点「已折叠 N 条」展开 */
-html.pt-skip-collapse .pt-skipped:not(.pt-expanded) { opacity: 0.55; filter: grayscale(1); }
-html.pt-skip-collapse .pt-skipped.pt-expanded { opacity: 0.8; }
-html.pt-skip-collapse.pt-site-scholar .pt-skipped:not(.pt-expanded) :is(.gs_a, .gs_rs, .gs_fl, .gs_ggs, .gs_or_svg) { display: none !important; }
-html.pt-skip-collapse.pt-site-scholar .pt-skipped:not(.pt-expanded) .gs_rt { font-size: 13px !important; font-weight: 400 !important; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-html.pt-skip-collapse.pt-site-scholar .pt-skipped:not(.pt-expanded) { margin: 0 !important; padding: 2px 0 !important; }
-html.pt-skip-collapse.pt-site-arxiv dt.pt-skipped:not(.pt-expanded) { display: none !important; }
-html.pt-skip-collapse.pt-site-arxiv dd.pt-skipped:not(.pt-expanded) :is(.list-authors, .list-comments, .list-subjects, .list-journal-ref, p) { display: none !important; }
-html.pt-skip-collapse.pt-site-arxiv dd.pt-skipped:not(.pt-expanded) { margin: 0 0 0 1.5em !important; }
-html.pt-skip-collapse.pt-site-arxiv dd.pt-skipped:not(.pt-expanded) .list-title { font-size: 13px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-html.pt-skip-collapse.pt-site-arxiv li.pt-skipped:not(.pt-expanded) :is(.authors, .abstract, .is-size-7, .tags) { display: none !important; }
-html.pt-skip-collapse.pt-site-pubmed .pt-skipped:not(.pt-expanded) :is(.docsum-citation, .full-view-snippet, .docsum-cited-by, .docsum-share) { display: none !important; }
-html.pt-skip-collapse.pt-site-pubmed .pt-skipped:not(.pt-expanded) .docsum-title { font-size: 13px !important; }
-html.pt-skip-collapse.pt-site-x article.pt-skipped:not(.pt-expanded) { max-height: 5.2em; overflow: hidden; }
-html.pt-skip-collapse .pt-skipped:not(.pt-expanded) .pt-badge { font-size: 11px; padding: 0 0.55em; }
+html[data-pt-skip="collapse"] [data-pt-skipped]:not([data-pt-expanded]) { opacity: 0.55; filter: grayscale(1); }
+html[data-pt-skip="collapse"] [data-pt-skipped][data-pt-expanded] { opacity: 0.8; }
+html[data-pt-skip="collapse"][data-pt-site="scholar"] [data-pt-skipped]:not([data-pt-expanded]) :is(.gs_a, .gs_rs, .gs_fl, .gs_ggs, .gs_or_svg) { display: none !important; }
+html[data-pt-skip="collapse"][data-pt-site="scholar"] [data-pt-skipped]:not([data-pt-expanded]) .gs_rt { font-size: 13px !important; font-weight: 400 !important; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-pt-skip="collapse"][data-pt-site="scholar"] [data-pt-skipped]:not([data-pt-expanded]) { margin: 0 !important; padding: 2px 0 !important; }
+html[data-pt-skip="collapse"][data-pt-site="arxiv"] dt[data-pt-skipped]:not([data-pt-expanded]) { display: none !important; }
+html[data-pt-skip="collapse"][data-pt-site="arxiv"] dd[data-pt-skipped]:not([data-pt-expanded]) :is(.list-authors, .list-comments, .list-subjects, .list-journal-ref, p) { display: none !important; }
+html[data-pt-skip="collapse"][data-pt-site="arxiv"] dd[data-pt-skipped]:not([data-pt-expanded]) { margin: 0 0 0 1.5em !important; }
+html[data-pt-skip="collapse"][data-pt-site="arxiv"] dd[data-pt-skipped]:not([data-pt-expanded]) .list-title { font-size: 13px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-pt-skip="collapse"][data-pt-site="arxiv"] li[data-pt-skipped]:not([data-pt-expanded]) :is(.authors, .abstract, .is-size-7, .tags) { display: none !important; }
+html[data-pt-skip="collapse"][data-pt-site="pubmed"] [data-pt-skipped]:not([data-pt-expanded]) :is(.docsum-citation, .full-view-snippet, .docsum-cited-by, .docsum-share) { display: none !important; }
+html[data-pt-skip="collapse"][data-pt-site="pubmed"] [data-pt-skipped]:not([data-pt-expanded]) .docsum-title { font-size: 13px !important; }
+html[data-pt-skip="collapse"][data-pt-site="x"] article[data-pt-skipped]:not([data-pt-expanded]) { max-height: 5.2em; overflow: hidden; }
+html[data-pt-skip="collapse"] [data-pt-skipped]:not([data-pt-expanded]) .pt-badge { font-size: 11px; padding: 0 0.55em; }
 
 /* run marker between collapsed runs */
 .pt-run { margin: 4px 0; padding: 2px 0; color: #6b7280; font: 500 12px/1.6 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; cursor: pointer; user-select: none; }
 .pt-run:hover { color: #1f2937; }
-html:not(.pt-skip-collapse) .pt-run { display: none !important; }
+html:not([data-pt-skip="collapse"]) .pt-run { display: none !important; }
 
 /* 只看关注 */
-html.pt-filter-follow [data-pt-key]:not([data-pt-label="follow"]) { display: none !important; }
-html.pt-filter-follow .pt-run { display: none !important; }
-.pt-flash { outline: 2px solid #2e7d32; outline-offset: 4px; border-radius: 4px; transition: outline-color 1s ease; }
+html[data-pt-follow-only] [data-pt-key]:not([data-pt-label="follow"]) { display: none !important; }
+html[data-pt-follow-only] .pt-run { display: none !important; }
+[data-pt-flash] { outline: 2px solid #2e7d32; outline-offset: 4px; border-radius: 4px; transition: outline-color 1s ease; }
 
 /* ===== Floating summary bar ===== */
 .pt-toolbar { position: fixed; right: 16px; bottom: 16px; z-index: 2147483000; display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 12px; border: 1px solid #d1d5db; border-radius: 999px; background: rgba(255,255,255,0.96); box-shadow: 0 6px 20px rgba(0,0,0,0.12); backdrop-filter: blur(6px); font: 500 12px/1.4 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif; color: #1f2937; }
@@ -74,34 +74,34 @@ html.pt-filter-follow .pt-run { display: none !important; }
 @media (max-width: 760px) { .pt-toolbar { left: 8px; right: 8px; bottom: 8px; flex-wrap: wrap; border-radius: 12px; } }
 
 /* ===== Global off switch (popup toggle) ===== */
-html.pt-disabled :is(.pt-badge, .pt-review, .pt-reasons, .pt-run, .pt-toolbar) { display: none !important; }
-html.pt-disabled .pt-skipped { opacity: 1 !important; filter: none !important; display: revert !important; }
-html.pt-disabled .pt-follow-item { box-shadow: none; background: transparent; }
-html.pt-disabled [data-pt-key] { display: revert !important; }
-html.pt-disabled.pt-skip-collapse .pt-skipped :is(.gs_a, .gs_rs, .gs_fl, .gs_ggs, .list-authors, .list-comments, .list-subjects, p, .docsum-citation, .full-view-snippet) { display: revert !important; }
+html[data-pt-disabled] :is(.pt-badge, .pt-review, .pt-reasons, .pt-run, .pt-toolbar) { display: none !important; }
+html[data-pt-disabled] [data-pt-skipped] { opacity: 1 !important; filter: none !important; display: revert !important; }
+html[data-pt-disabled] [data-pt-accent] { box-shadow: none; background: transparent; }
+html[data-pt-disabled] [data-pt-key] { display: revert !important; }
+html[data-pt-disabled] [data-pt-skipped] :is(.gs_a, .gs_rs, .gs_fl, .gs_ggs, .list-authors, .list-comments, .list-subjects, p, .docsum-citation, .full-view-snippet) { display: revert !important; }
 
 /* ===== X / Twitter：跳过的推文折叠成一行（头像缩小、媒体与操作栏隐藏、正文一行截断） ===== */
-html.pt-skip-hide.pt-site-x [data-testid="cellInnerDiv"].pt-skipped { display: none !important; }
-html.pt-skip-collapse.pt-site-x [data-testid="cellInnerDiv"].pt-skipped:not(.pt-expanded) { opacity: 1; filter: none; }
-html.pt-site-x [data-testid="cellInnerDiv"].pt-follow-item { box-shadow: none; background: transparent; }
-html.pt-skip-collapse.pt-site-x article.pt-skipped:not(.pt-expanded) { max-height: none; overflow: visible; }
-html.pt-skip-collapse.pt-site-x article.pt-skipped:not(.pt-expanded) :is([data-testid="tweetPhoto"], [data-testid="videoPlayer"], [data-testid="videoComponent"], [data-testid="card.wrapper"], [data-testid="card.layoutLarge.media"], [data-testid="card.layoutSmall.media"], [role="group"], [data-testid="tweetText"] ~ div[role="link"], [data-testid="Tweet-User-Avatar"] ~ div [data-testid="tweetText"] ~ div:has(article)) { display: none !important; }
-html.pt-skip-collapse.pt-site-x article.pt-skipped:not(.pt-expanded) [data-testid="tweetText"] { display: -webkit-box !important; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px !important; line-height: 1.4 !important; color: #71767b !important; }
-html.pt-skip-collapse.pt-site-x article.pt-skipped:not(.pt-expanded) [data-testid="Tweet-User-Avatar"] { transform: scale(0.55); transform-origin: top left; height: 24px !important; }
-html.pt-skip-collapse.pt-site-x article.pt-skipped:not(.pt-expanded) [data-testid="User-Name"] { font-size: 12px !important; }
-html.pt-skip-collapse.pt-site-x article.pt-skipped:not(.pt-expanded) { opacity: 0.55; filter: none; }
-html.pt-site-x .pt-run { padding: 4px 16px 4px 64px; border-bottom: 1px solid rgba(128,128,128,0.15); }
-html.pt-site-x .pt-follow-item { box-shadow: inset 3px 0 0 #2e7d32; background: rgba(46, 125, 50, 0.06); }
-html.pt-site-x .pt-reasons { color: #8b98a5; }
+html[data-pt-skip="hide"][data-pt-site="x"] [data-testid="cellInnerDiv"][data-pt-skipped] { display: none !important; }
+html[data-pt-skip="collapse"][data-pt-site="x"] [data-testid="cellInnerDiv"][data-pt-skipped]:not([data-pt-expanded]) { opacity: 1; filter: none; }
+html[data-pt-site="x"] [data-testid="cellInnerDiv"][data-pt-accent] { box-shadow: none; background: transparent; }
+html[data-pt-skip="collapse"][data-pt-site="x"] article[data-pt-skipped]:not([data-pt-expanded]) { max-height: none; overflow: visible; }
+html[data-pt-skip="collapse"][data-pt-site="x"] article[data-pt-skipped]:not([data-pt-expanded]) :is([data-testid="tweetPhoto"], [data-testid="videoPlayer"], [data-testid="videoComponent"], [data-testid="card.wrapper"], [data-testid="card.layoutLarge.media"], [data-testid="card.layoutSmall.media"], [role="group"], [data-testid="tweetText"] ~ div[role="link"], [data-testid="Tweet-User-Avatar"] ~ div [data-testid="tweetText"] ~ div:has(article)) { display: none !important; }
+html[data-pt-skip="collapse"][data-pt-site="x"] article[data-pt-skipped]:not([data-pt-expanded]) [data-testid="tweetText"] { display: -webkit-box !important; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px !important; line-height: 1.4 !important; color: #71767b !important; }
+html[data-pt-skip="collapse"][data-pt-site="x"] article[data-pt-skipped]:not([data-pt-expanded]) [data-testid="Tweet-User-Avatar"] { transform: scale(0.55); transform-origin: top left; height: 24px !important; }
+html[data-pt-skip="collapse"][data-pt-site="x"] article[data-pt-skipped]:not([data-pt-expanded]) [data-testid="User-Name"] { font-size: 12px !important; }
+html[data-pt-skip="collapse"][data-pt-site="x"] article[data-pt-skipped]:not([data-pt-expanded]) { opacity: 0.55; filter: none; }
+html[data-pt-site="x"] .pt-run { padding: 4px 16px 4px 64px; border-bottom: 1px solid rgba(128,128,128,0.15); }
+html[data-pt-site="x"] [data-pt-accent] { box-shadow: inset 3px 0 0 #2e7d32; background: rgba(46, 125, 50, 0.06); }
+html[data-pt-site="x"] .pt-reasons { color: #8b98a5; }
 
 /* ===== 小红书：默认「隐藏」屏蔽项（隐藏后由脚本重排瀑布流）；「折叠」= 去掉封面只留小标题 ===== */
-html.pt-site-xhs .pt-badge { font-size: 11px; margin: 0 4px 2px 0; }
-html.pt-site-xhs .footer .pt-reasons { display: block; margin: 0 0 2px; font-size: 10px; }
-html.pt-skip-hide.pt-site-xhs section.pt-skipped { display: none !important; }
-html.pt-skip-collapse.pt-site-xhs section.pt-skipped:not(.pt-expanded) :is(a.cover, .author-wrapper) { display: none !important; }
-html.pt-skip-collapse.pt-site-xhs section.pt-skipped:not(.pt-expanded) { opacity: 0.45; filter: grayscale(1); }
-html.pt-skip-collapse.pt-site-xhs section.pt-skipped:not(.pt-expanded) .title { font-size: 11px !important; }
-html.pt-skip-dim.pt-site-xhs section.pt-skipped a.cover { filter: grayscale(1) blur(6px); }
-html.pt-site-xhs .pt-follow-item { box-shadow: 0 0 0 2px #2e7d32; border-radius: 12px; background: transparent; }
-html.pt-site-xhs .pt-run { display: none !important; } /* 瀑布流里没有「连续」的概念 */
-html.pt-site-xhs #noteContainer .pt-badge { vertical-align: middle; }
+html[data-pt-site="xhs"] .pt-badge { font-size: 11px; margin: 0 4px 2px 0; }
+html[data-pt-site="xhs"] .footer .pt-reasons { display: block; margin: 0 0 2px; font-size: 10px; }
+html[data-pt-skip="hide"][data-pt-site="xhs"] section[data-pt-skipped] { display: none !important; }
+html[data-pt-skip="collapse"][data-pt-site="xhs"] section[data-pt-skipped]:not([data-pt-expanded]) :is(a.cover, .author-wrapper) { display: none !important; }
+html[data-pt-skip="collapse"][data-pt-site="xhs"] section[data-pt-skipped]:not([data-pt-expanded]) { opacity: 0.45; filter: grayscale(1); }
+html[data-pt-skip="collapse"][data-pt-site="xhs"] section[data-pt-skipped]:not([data-pt-expanded]) .title { font-size: 11px !important; }
+html[data-pt-skip="dim"][data-pt-site="xhs"] section[data-pt-skipped] a.cover { filter: grayscale(1) blur(6px); }
+html[data-pt-site="xhs"] [data-pt-accent] { box-shadow: 0 0 0 2px #2e7d32; border-radius: 12px; background: transparent; }
+html[data-pt-site="xhs"] .pt-run { display: none !important; } /* 瀑布流里没有「连续」的概念 */
+html[data-pt-site="xhs"] #noteContainer .pt-badge { vertical-align: middle; }

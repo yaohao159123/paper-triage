@@ -53,7 +53,7 @@ test('triage judges, caches per profile hash, reuses cache, and force re-judges 
   assert.equal(r1.verdicts['title:microwave-heating-of-biomass'].label, 'follow');
   assert.equal(r1.verdicts['title:antenna-design'].label, 'skip');
   assert.equal(r1.verdicts['title:antenna-design'].basis, 'title');
-  assert.match(r1.profileHash, /^[0-9a-f]{8}$/);
+  assert.match(r1.profileHash, /^[0-9a-f]{8}-p\d+$/);
   // cache hit: no new request
   const r2 = await triage(papers);
   assert.equal(calls.length, 1);
@@ -106,7 +106,7 @@ test('tweet domain uses the tweet profile, its own namespace and chip text', asy
   assert.ok(r.ok);
   assert.equal(calls[0].state.reader.summary.length > 10, true);
   assert.equal(calls[0].state.tweets[0].text, 'A useful tweet');
-  assert.match(r.profileHash, /^t[0-9a-f]{8}$/);
+  assert.match(r.profileHash, /^t[0-9a-f]{8}-p\d+$/);
   const v = r.verdicts['tweet:42'];
   assert.equal(v.domain, 'tweet');
   assert.equal(v.chip, '推广');
@@ -129,7 +129,7 @@ test('xhs domain uses the xhs profile and its own namespace', async () => {
   await handleMessage({ type: 'setSettings', patch: { apiKey: 'k' } });
   const r = await handleMessage({ type: 'triage', domain: 'xhs', items: [{ title: 'Claude Code 教程', postId: 'a1' }, { title: '穿搭', postId: 'a2' }] });
   assert.ok(r.ok);
-  assert.match(r.profileHash, /^x[0-9a-f]{8}$/);
+  assert.match(r.profileHash, /^x[0-9a-f]{8}-p\d+$/);
   assert.ok(calls[0].state.reader.interests.length > 0);
   assert.equal(r.verdicts['xhs:a1'].label, 'follow');
   assert.equal(r.verdicts['xhs:a2'].label, 'skip');

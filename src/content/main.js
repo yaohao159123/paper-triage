@@ -6,7 +6,7 @@ import { effectiveLabel, nextManualLabel, LABELS } from '../shared/policy.js';
 import { reasonLabels } from '../shared/questions.js';
 import { DEFAULT_DISPLAY, skipModeFor } from '../shared/profile.js';
 import { relayoutMasonry, restoreMasonry } from './masonry.js';
-import { renderBadge, setDisabled, setSkipMode, countLabels, BADGE_CLASS } from './render.js';
+import { renderBadge, setDisabled, setSkipMode, setRootFlag, countLabels, BADGE_CLASS } from './render.js';
 import { mountToolbar, jumpToNextFollow } from './toolbar.js';
 import { refreshRuns, toggleExpanded } from './collapse.js';
 import { reorder } from './reorder.js';
@@ -37,7 +37,7 @@ function send(msg) {
 }
 
 async function start() {
-  document.documentElement.classList.add(`pt-site-${adapter.id}`);
+  document.documentElement.dataset.ptSite = adapter.id;
   const settings = await send({ type: 'getSettings' });
   applyDisplay(settings.ok ? settings.display : null);
   setDisabled(document, settings.ok && settings.enabled === false);
@@ -109,7 +109,7 @@ const siteSkipMode = () => skipModeFor(display, adapter.id, adapter.defaultSkipM
 function applyDisplay(d) {
   display = { ...DEFAULT_DISPLAY, ...(d || {}) };
   setSkipMode(document, siteSkipMode());
-  document.documentElement.classList.toggle('pt-no-accent', display.followAccent === false);
+  setRootFlag(document, 'ptNoAccent', display.followAccent === false);
   toolbar?.setSkipMode(siteSkipMode());
   if (toolbar && toolbar.getSort() !== !!display.sortFollowFirst) toolbar.setSort(!!display.sortFollowFirst);
   afterLayout();
@@ -225,7 +225,7 @@ function relayoutIfMasonry() {
   const container = document.querySelector(adapter.masonry.container);
   const cards = container ? [...container.querySelectorAll(adapter.masonry.cards)] : [];
   if (!cards.length) return;
-  const hiding = siteSkipMode() === 'hide' || document.documentElement.classList.contains('pt-filter-follow');
+  const hiding = siteSkipMode() === 'hide' || !!document.documentElement.dataset.ptFollowOnly;
   if (hiding) relayoutMasonry(container, cards);
   else restoreMasonry(container, cards);
 }
@@ -263,7 +263,7 @@ async function onBadgeClick(event) {
 
 function onDoubleClick(event) {
   if (event.target?.closest?.('a, button, input, textarea, .pt-toolbar')) return;
-  const container = event.target?.closest?.('[data-pt-key].pt-skipped');
+  const container = event.target?.closest?.('[data-pt-key][data-pt-skipped]');
   if (!container || siteSkipMode() !== 'collapse') return;
   const rec = (byKey.get(container.dataset.ptKey) || [])[0];
   if (!rec) return;

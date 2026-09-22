@@ -1,6 +1,6 @@
 # 文献分诊（Paper Triage）· 单功能轻量 spec
 
-> 2026-09-22 · 版本 0.4.1 · 形态：Chrome 扩展（Manifest V3，无构建步骤）· 判断引擎：TypeSafe Jev（System One）
+> 2026-09-22 · 版本 0.4.2 · 形态：Chrome 扩展（Manifest V3，无构建步骤）· 判断引擎：TypeSafe Jev（System One）
 
 ## 0. 一句话
 
@@ -43,6 +43,7 @@
 - **小红书默认「隐藏」**：卡片是 JS 绝对定位的瀑布流，直接隐藏会留洞，脚本在隐藏后按列重排剩余卡片（`masonry.js`：读取站点写的 transform / left-top，按最短列重新摆放并记住原位，切回其它模式时还原）。「折叠」= 去掉封面只留小标题；「变灰」= 封面模糊。学习类卡片描绿框。
 - **每站点独立的跳过显示方式**：`display.skipModes[site]` > 适配器默认（小红书 hide）> 全局默认；工具条下拉只改当前站点，选择记住。
 - **推广 / 广告直接判跳过**（推文与小红书）：推广 Noul ≥ promoSkipMin（默认 0.8）且 P(关注) < 0.8 → 跳过，tooltip 注明「已按推广 / 广告规则判为跳过」；文献域不受影响（综述只是信息）。阈值在设置页。
+- **状态用 data-* 属性**：条目状态（`data-pt-label / data-pt-skipped / data-pt-accent / data-pt-expanded`）与页面级开关（`html[data-pt-site / data-pt-skip / data-pt-follow-only / data-pt-disabled / data-pt-no-accent]`）都不用 class，因为 React 站点（X、小红书）重绘时会整体重写 className。
 - **X 虚拟列表**：容器为 [article, `cellInnerDiv`]，隐藏 / 只看关注 作用到格子；滚动重新挂载的推文用本地判定即时套用（`quickApply`），不闪现。
 - **Twitter 折叠重做**：跳过的推文折成一行：图片 / 视频 / 卡片 / 引用推文 / 操作栏隐藏，正文单行截断变灰，头像缩小；连续跳过合并「已折叠 N 条」；关注推文左侧绿条 + 淡底 + 命中维度（主题 / 具体 / 来源）。
 

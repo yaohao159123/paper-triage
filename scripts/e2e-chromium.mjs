@@ -126,11 +126,11 @@ async function main() {
       let counts;
       try {
         counts = await waitFor(async () => {
-          const c = await evalIn(`(() => { const q = (s) => document.querySelectorAll(s).length; return { badges: q('.pt-badge'), loading: q('.pt-loading'), error: q('.pt-error'), follow: q('.pt-follow'), normal: q('.pt-normal'), skip: q('.pt-skip'), skipped: q('.pt-skipped') }; })()`);
+          const c = await evalIn(`(() => { const q = (s) => document.querySelectorAll(s).length; return { badges: q('.pt-badge'), loading: q('.pt-loading'), error: q('.pt-error'), follow: q('.pt-follow'), normal: q('.pt-normal'), skip: q('.pt-skip'), skipped: q('[data-pt-skipped]') }; })()`);
           return c.badges >= page.expectMin && c.loading === 0 ? c : null;
         });
       } catch (err) {
-        counts = await evalIn(`(() => { const q = (s) => document.querySelectorAll(s).length; return { badges: q('.pt-badge'), loading: q('.pt-loading'), error: q('.pt-error'), follow: q('.pt-follow'), normal: q('.pt-normal'), skip: q('.pt-skip'), skipped: q('.pt-skipped') }; })()`);
+        counts = await evalIn(`(() => { const q = (s) => document.querySelectorAll(s).length; return { badges: q('.pt-badge'), loading: q('.pt-loading'), error: q('.pt-error'), follow: q('.pt-follow'), normal: q('.pt-normal'), skip: q('.pt-skip'), skipped: q('[data-pt-skipped]') }; })()`);
         failed = true;
       }
       const ms = Date.now() - t0;
@@ -142,8 +142,8 @@ async function main() {
       writeFileSync(file, Buffer.from(shot.data, 'base64'));
       const siteChecks = await evalIn(`(() => {
         const html = document.documentElement;
-        const out = { skipMode: ['collapse','dim','hide'].find(m => html.classList.contains('pt-skip-' + m)) };
-        if (${page.xCollapse ? 'true' : 'false'}) { const a = document.querySelector('article.pt-skipped'); out.mediaHidden = a ? [...a.querySelectorAll('[data-testid="tweetPhoto"]')].every(el => getComputedStyle(el).display === 'none') : null; out.textClamped = a ? getComputedStyle(a.querySelector('[data-testid="tweetText"]')).webkitLineClamp === '1' : null; }
+        const out = { skipMode: html.dataset.ptSkip };
+        if (${page.xCollapse ? 'true' : 'false'}) { const a = document.querySelector('article[data-pt-skipped]'); out.mediaHidden = a ? [...a.querySelectorAll('[data-testid="tweetPhoto"]')].every(el => getComputedStyle(el).display === 'none') : null; out.textClamped = a ? getComputedStyle(a.querySelector('[data-testid="tweetText"]')).webkitLineClamp === '1' : null; }
         if (${page.masonry ? 'true' : 'false'}) { const feed = document.querySelector('#exploreFeeds'); const cards = [...feed.querySelectorAll('section.note-item')]; out.relayout = feed.dataset.ptRelayout === '1'; out.hidden = cards.filter(c => getComputedStyle(c).display === 'none').length; out.visiblePositions = cards.filter(c => getComputedStyle(c).display !== 'none').map(c => c.style.transform); out.feedHeight = feed.style.height; }
         return out; })()`);
       const siteOk = (!page.xCollapse || (siteChecks.skipMode === 'collapse' && siteChecks.mediaHidden !== false && siteChecks.textClamped === true))
@@ -153,7 +153,7 @@ async function main() {
         const t = document.querySelector('.pt-toolbar'); if (!t) return null;
         const sleep = (ms) => new Promise(r => setTimeout(r, ms));
         const skipped = () => [...document.querySelectorAll('[data-pt-key][data-pt-label="skip"]')];
-        const out = { counts: t.querySelector('.pt-tb-counts').textContent, runs: document.querySelectorAll('.pt-run').length, reasons: document.querySelectorAll('.pt-reasons').length, collapsed: document.documentElement.classList.contains('pt-skip-collapse') };
+        const out = { counts: t.querySelector('.pt-tb-counts').textContent, runs: document.querySelectorAll('.pt-run').length, reasons: document.querySelectorAll('.pt-reasons').length, collapsed: document.documentElement.dataset.ptSkip === 'collapse' };
         const sel = t.querySelector('.pt-tb-skipmode'); sel.value = 'hide'; sel.dispatchEvent(new Event('change')); await sleep(400);
         out.hiddenInHideMode = skipped().filter(el => getComputedStyle(el).display === 'none').length;
         sel.value = 'collapse'; sel.dispatchEvent(new Event('change')); await sleep(400);

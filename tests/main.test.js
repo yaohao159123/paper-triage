@@ -48,12 +48,12 @@ test('content script: scan → verdict badges → toolbar counts → filters →
   assert.equal(sent.find((m) => m.type === 'triage').items.length, 10);
   const skipCount = q('.pt-skip');
   assert.ok(q('.pt-follow') >= 1 && skipCount >= 1, 'mixed labels');
-  assert.equal(q('.pt-skipped'), skipCount, 'skipped entries marked');
-  assert.equal(q('.pt-follow-item'), q('.pt-follow'), 'follow entries get the accent class');
-  assert.ok(document.documentElement.classList.contains('pt-site-scholar'));
-  assert.ok(document.documentElement.classList.contains('pt-skip-collapse'));
+  assert.equal(q('[data-pt-skipped]'), skipCount, 'skipped entries marked');
+  assert.equal(q('[data-pt-accent]'), q('.pt-follow'), 'follow entries get the accent attribute');
+  assert.equal(document.documentElement.dataset.ptSite, 'scholar');
+  assert.equal(document.documentElement.dataset.ptSkip, 'collapse');
   assert.equal(q('.pt-reasons'), q('.pt-follow'), 'reasons shown for follow entries only');
-  assert.equal(document.querySelector('.pt-follow-item .pt-reasons').textContent, '命中 课题 · 材料');
+  assert.equal(document.querySelector('[data-pt-accent] .pt-reasons').textContent, '命中 课题 · 材料');
   assert.equal(q('.pt-toolbar'), 1);
   assert.match(document.querySelector('.pt-tb-counts').textContent, new RegExp(`关注 ${q('.pt-follow')} · 普通 0 · 跳过 ${skipCount}`));
   // collapsed runs: consecutive skipped results are grouped under a marker
@@ -61,9 +61,9 @@ test('content script: scan → verdict badges → toolbar counts → filters →
   assert.ok(q('.pt-run') >= 1 && runTotal <= skipCount, `runs ${q('.pt-run')} covering ${runTotal}`);
   // 只看关注 via popup message and via toolbar button
   await dispatch({ type: 'filter', mode: 'follow' });
-  assert.ok(document.documentElement.classList.contains('pt-filter-follow'));
+  assert.equal(document.documentElement.dataset.ptFollowOnly, '1');
   document.querySelector('.pt-toolbar [data-action="followonly"]').click();
-  assert.ok(!document.documentElement.classList.contains('pt-filter-follow'));
+  assert.equal(document.documentElement.dataset.ptFollowOnly, undefined);
   // 关注置顶: follows move ahead of skips inside the results container, then restore
   const order = () => [...document.querySelectorAll('.gs_r[data-pt-key]')].map((el) => el.dataset.ptLabel);
   const beforeOrder = order();
@@ -90,12 +90,12 @@ test('content script: scan → verdict badges → toolbar counts → filters →
   assert.ok(!badge.classList.contains('pt-manual'));
   // keyboard: Alt+F toggles 只看关注, Alt+H asks the background to switch skip mode to hide
   document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', altKey: true, bubbles: true }));
-  assert.ok(document.documentElement.classList.contains('pt-filter-follow'));
+  assert.equal(document.documentElement.dataset.ptFollowOnly, '1');
   document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', altKey: true, bubbles: true }));
   document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'h', altKey: true, bubbles: true }));
   const patch = sent.filter((m) => m.type === 'setSettings').at(-1);
   assert.equal(patch.patch.display.skipModes.scholar, 'hide', 'per-site skip mode persisted');
-  assert.ok(document.documentElement.classList.contains('pt-skip-hide'), 'applied locally right away');
+  assert.equal(document.documentElement.dataset.ptSkip, 'hide', 'applied locally right away');
   // rerun message re-triages every entry with force
   const before = sent.filter((m) => m.type === 'triage').length;
   await dispatch({ type: 'rerun' });
@@ -110,7 +110,7 @@ test('virtualised re-mount: a result re-inserted without marks gets its verdict 
   const key = first.dataset.ptKey;
   const label = first.dataset.ptLabel;
   const clone = first.cloneNode(true);
-  for (const el of [clone, ...clone.querySelectorAll('[data-pt-key]')]) { delete el.dataset.ptKey; delete el.dataset.ptLabel; el.classList.remove('pt-skipped', 'pt-follow-item'); }
+  for (const el of [clone, ...clone.querySelectorAll('[data-pt-key]')]) { delete el.dataset.ptKey; delete el.dataset.ptLabel; delete el.dataset.ptSkipped; delete el.dataset.ptAccent; }
   clone.querySelector('.pt-badge')?.remove();
   clone.querySelector('.pt-reasons')?.remove();
   first.remove();

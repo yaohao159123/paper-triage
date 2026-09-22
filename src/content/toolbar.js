@@ -1,11 +1,11 @@
 // Floating summary bar: counts, 跳过项显示方式, 只看关注, 关注置顶, next 关注, re-judge. Pure DOM.
 export const TOOLBAR_CLASS = 'pt-toolbar';
 export const SKIP_MODE_LABELS = { collapse: '跳过：折叠', dim: '跳过：变灰', hide: '跳过：隐藏' };
-const FOLLOW_ONLY_CLASS = 'pt-filter-follow';
 const STORAGE_KEY = 'pt-follow-only';
 
 export function setFollowOnly(doc, on) {
-  doc.documentElement.classList.toggle(FOLLOW_ONLY_CLASS, !!on);
+  if (on) doc.documentElement.dataset.ptFollowOnly = '1';
+  else delete doc.documentElement.dataset.ptFollowOnly;
   try { doc.defaultView?.sessionStorage?.setItem(STORAGE_KEY, on ? '1' : '0'); } catch { /* private mode etc. */ }
 }
 
@@ -25,8 +25,8 @@ export function jumpToNextFollow(doc) {
   if (!targets.length) return null;
   const next = targets.find((el) => el.getBoundingClientRect().top > 40) || targets[0];
   next.scrollIntoView({ block: 'start', behavior: 'smooth' });
-  next.classList.add('pt-flash');
-  setTimeout(() => next.classList.remove('pt-flash'), 1200);
+  next.dataset.ptFlash = '1';
+  setTimeout(() => delete next.dataset.ptFlash, 1200);
   return next;
 }
 

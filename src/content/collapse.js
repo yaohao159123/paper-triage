@@ -1,6 +1,6 @@
 // Runs of consecutive skipped entries get one "已折叠 N 条" marker; clicking it expands the run. Pure DOM.
 export const RUN_CLASS = 'pt-run';
-export const EXPANDED_CLASS = 'pt-expanded';
+export const EXPANDED_ATTR = 'ptExpanded'; // data-pt-expanded
 
 /** entries in DOM order: [{key, containers, label}] */
 export function refreshRuns(doc, entries, { minRun = 2 } = {}) {
@@ -20,13 +20,13 @@ export function refreshRuns(doc, entries, { minRun = 2 } = {}) {
     marker.setAttribute('role', 'button');
     marker.tabIndex = 0;
     marker.dataset.ptCount = String(run.length);
-    const expanded = run.every((e) => e.containers[0].classList.contains(EXPANDED_CLASS));
+    const expanded = run.every((e) => !!e.containers[0].dataset[EXPANDED_ATTR]);
     setMarkerText(marker, run.length, expanded);
     marker.addEventListener('click', (ev) => {
       ev.preventDefault();
       ev.stopPropagation();
       const open = !marker.classList.contains('pt-run-open');
-      for (const e of run) for (const c of e.containers) c.classList.toggle(EXPANDED_CLASS, open);
+      for (const e of run) for (const c of e.containers) setExpanded(c, open);
       setMarkerText(marker, run.length, open);
     });
     if (expanded) marker.classList.add('pt-run-open');
@@ -42,7 +42,12 @@ function setMarkerText(marker, n, open) {
 
 /** Toggle one entry's expansion (double-click on a collapsed item). */
 export function toggleExpanded(entry) {
-  const open = !entry.containers[0].classList.contains(EXPANDED_CLASS);
-  for (const c of entry.containers) c.classList.toggle(EXPANDED_CLASS, open);
+  const open = !entry.containers[0].dataset[EXPANDED_ATTR];
+  for (const c of entry.containers) setExpanded(c, open);
   return open;
+}
+
+function setExpanded(el, open) {
+  if (open) el.dataset[EXPANDED_ATTR] = '1';
+  else delete el.dataset[EXPANDED_ATTR];
 }

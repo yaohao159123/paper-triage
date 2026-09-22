@@ -6,7 +6,6 @@ export const REVIEW_CLASS = 'pt-review';
 export const REASONS_CLASS = 'pt-reasons';
 export const REVIEW_MIN = 0.5;
 const STATE_CLASSES = ['pt-loading', 'pt-error', 'pt-follow', 'pt-normal', 'pt-skip', 'pt-manual', 'pt-unsure'];
-const CONTAINER_CLASSES = ['pt-skipped', 'pt-follow-item', 'pt-normal-item'];
 
 export function ensureBadge(entry) {
   let badge = entry.mount.querySelector(`:scope > .${BADGE_CLASS}`);
@@ -54,12 +53,14 @@ export function renderBadge(entry, view) {
   if (!label) delete badge.dataset.ptLabel;
   renderChip(badge, review, view.verdict);
   renderReasons(badge, reasonsText);
+  // State lives in data-* attributes: React-managed hosts (X, 小红书) rewrite className on re-render and would wipe classes.
   for (const c of entry.containers) {
-    c.classList.remove(...CONTAINER_CLASSES);
     if (label) c.dataset.ptLabel = label;
     else delete c.dataset.ptLabel;
-    if (label === 'skip' && !entry.noGray) c.classList.add('pt-skipped');
-    if (label === 'follow' && !entry.noGray) c.classList.add('pt-follow-item');
+    if (label === 'skip' && !entry.noGray) c.dataset.ptSkipped = '1';
+    else delete c.dataset.ptSkipped;
+    if (label === 'follow' && !entry.noGray) c.dataset.ptAccent = '1';
+    else delete c.dataset.ptAccent;
   }
   return badge;
 }
@@ -113,17 +114,25 @@ export function tooltip(v, reasonLabels) {
 }
 
 export function setSkipped(entry, skipped) {
-  for (const c of entry.containers) c.classList.toggle('pt-skipped', skipped);
+  for (const c of entry.containers) {
+    if (skipped) c.dataset.ptSkipped = '1';
+    else delete c.dataset.ptSkipped;
+  }
+}
+
+/** Root flags are data-* too (html[data-pt-...]), same reason. */
+export function setRootFlag(doc, name, on) {
+  if (on) doc.documentElement.dataset[name] = '1';
+  else delete doc.documentElement.dataset[name];
 }
 
 export function setDisabled(doc, disabled) {
-  doc.documentElement.classList.toggle('pt-disabled', !!disabled);
+  setRootFlag(doc, 'ptDisabled', !!disabled);
 }
 
-/** html.pt-skip-<mode> drives how skipped entries look: collapse | dim | hide. */
+/** html[data-pt-skip="<mode>"] drives how skipped entries look: collapse | dim | hide. */
 export function setSkipMode(doc, mode) {
-  const root = doc.documentElement;
-  for (const m of ['collapse', 'dim', 'hide']) root.classList.toggle(`pt-skip-${m}`, m === mode);
+  doc.documentElement.dataset.ptSkip = ['collapse', 'dim', 'hide'].includes(mode) ? mode : 'collapse';
 }
 
 /** Counts unique papers (arXiv lists carry the key on dt and dd) by effective label. */

@@ -27,7 +27,7 @@ test('renderBadge: label attrs on all containers, review chip, reasons text, uns
   assert.equal(badge.nextElementSibling.className, REVIEW_CLASS);
   assert.equal(badge.parentNode.querySelector(`.${REASONS_CLASS}`), null, 'skipped entries never show reasons');
   assert.equal(e1.containers[0].dataset.ptLabel, 'skip');
-  assert.ok(e1.containers[1].classList.contains('pt-skipped'));
+  assert.equal(e1.containers[1].dataset.ptSkipped, '1');
   assert.match(badge.title, /摘要片段/);
   // follow with reasons + unsure
   renderBadge(e1, { state: 'verdict', verdict: { label: 'follow', unsure: true, probs: { skip: 0.3, normal: 0.2, follow: 0.5 }, reviewProb: 0.1, reasons: { topic: 0.9, method: 0.2, material: 0.6 } }, reasonLabels: LABELS });
@@ -37,20 +37,20 @@ test('renderBadge: label attrs on all containers, review chip, reasons text, uns
   assert.equal(badge.nextElementSibling.textContent, '命中 课题 · 材料');
   assert.match(badge.title, /把握不大/);
   assert.match(badge.title, /课题 90%/);
-  assert.ok(e1.containers[1].classList.contains('pt-follow-item'));
-  assert.ok(!e1.containers[1].classList.contains('pt-skipped'));
+  assert.equal(e1.containers[1].dataset.ptAccent, '1');
+  assert.equal(e1.containers[1].dataset.ptSkipped, undefined);
   // manual override hides the unsure hint
   renderBadge(e1, { state: 'verdict', verdict: { label: 'follow', unsure: true, manual: 'normal', probs: { skip: 0.3, normal: 0.2, follow: 0.5 } }, reasonLabels: LABELS });
   assert.ok(!badge.classList.contains('pt-unsure'));
   assert.ok(badge.classList.contains('pt-manual'));
-  assert.equal(e1.containers[1].classList.contains('pt-follow-item'), false);
+  assert.equal(e1.containers[1].dataset.ptAccent, undefined);
   renderBadge(e1, { state: 'loading' });
   assert.equal(e1.containers[0].dataset.ptLabel, undefined);
   assert.equal(badge.parentNode.querySelector(`.${REASONS_CLASS}`), null);
   // noGray entries keep the label but get no accent/grey
   e2.noGray = true;
   renderBadge(e2, { state: 'verdict', verdict: { label: 'skip', probs: { skip: 1, normal: 0, follow: 0 } } });
-  assert.ok(!e2.containers[1].classList.contains('pt-skipped'));
+  assert.equal(e2.containers[1].dataset.ptSkipped, undefined);
   assert.equal(e2.containers[1].dataset.ptLabel, 'skip');
 });
 
@@ -60,9 +60,9 @@ test('countLabels counts unique keys (dt+dd once) and pending; setSkipMode toggl
   renderBadge(e2, { state: 'loading' });
   assert.deepEqual(countLabels(doc), { follow: 1, normal: 0, skip: 0, pending: 1, total: 2 });
   setSkipMode(doc, 'hide');
-  assert.ok(doc.documentElement.classList.contains('pt-skip-hide'));
+  assert.equal(doc.documentElement.dataset.ptSkip, 'hide');
   setSkipMode(doc, 'collapse');
-  assert.ok(doc.documentElement.classList.contains('pt-skip-collapse') && !doc.documentElement.classList.contains('pt-skip-hide'));
+  assert.equal(doc.documentElement.dataset.ptSkip, 'collapse');
 });
 
 test('toolbar: single instance, counts, skip-mode select, 只看关注 toggle, sort toggle, next jumps', () => {
@@ -82,7 +82,7 @@ test('toolbar: single instance, counts, skip-mode select, 只看关注 toggle, s
   sel.dispatchEvent(new dom.window.Event('change'));
   assert.deepEqual(events, ['mode:hide']);
   bar.element.querySelector('[data-action="followonly"]').click();
-  assert.ok(doc.documentElement.classList.contains('pt-filter-follow'));
+  assert.equal(doc.documentElement.dataset.ptFollowOnly, '1');
   assert.equal(dom.window.sessionStorage.getItem('pt-follow-only'), '1');
   bar.element.querySelector('[data-action="sort"]').click();
   assert.equal(bar.getSort(), true);
@@ -96,7 +96,7 @@ test('toolbar: single instance, counts, skip-mode select, 只看关注 toggle, s
   assert.equal(jumpToNextFollow(doc).id, 'dt2');
   assert.deepEqual(scrolled, ['dt2']);
   setFollowOnly(doc, false);
-  assert.ok(!doc.documentElement.classList.contains('pt-filter-follow'));
+  assert.equal(doc.documentElement.dataset.ptFollowOnly, undefined);
 });
 
 test('collapse: runs of ≥2 skipped entries get one marker that expands/collapses them; single skips get none', () => {
@@ -110,13 +110,13 @@ test('collapse: runs of ≥2 skipped entries get one marker that expands/collaps
   assert.equal(markers[0].nextElementSibling.id, 'a');
   assert.match(markers[0].textContent, /已折叠 2 条/);
   markers[0].click();
-  assert.ok(doc.getElementById('a').classList.contains('pt-expanded') && doc.getElementById('b').classList.contains('pt-expanded'));
-  assert.ok(!doc.getElementById('d').classList.contains('pt-expanded'));
+  assert.ok(doc.getElementById('a').dataset.ptExpanded && doc.getElementById('b').dataset.ptExpanded);
+  assert.equal(doc.getElementById('d').dataset.ptExpanded, undefined);
   assert.match(markers[0].textContent, /已展开 2 条/);
   assert.equal(refreshRuns(doc, [mk('a', 'skip'), mk('b', 'follow'), mk('c', 'skip')]), 0, 'isolated skips are not grouped');
   assert.equal(doc.querySelectorAll(`.${RUN_CLASS}`).length, 0, 'stale markers removed');
   assert.equal(toggleExpanded(mk('c', 'skip')), true);
-  assert.ok(doc.getElementById('c').classList.contains('pt-expanded'));
+  assert.equal(doc.getElementById('c').dataset.ptExpanded, '1');
 });
 
 test('reorder: 关注 first within each segment on the real arXiv listing (dt+dd move together), restorable', () => {
