@@ -84,8 +84,10 @@ html[data-pt-disabled] [data-pt-skipped] :is(.gs_a, .gs_rs, .gs_fl, .gs_ggs, .li
 html[data-pt-skip="hide"][data-pt-site="x"] [data-testid="cellInnerDiv"][data-pt-skipped] { display: none !important; }
 html[data-pt-skip="collapse"][data-pt-site="x"] [data-testid="cellInnerDiv"][data-pt-skipped]:not([data-pt-expanded]) { opacity: 1; filter: none; }
 html[data-pt-site="x"] [data-testid="cellInnerDiv"][data-pt-accent] { box-shadow: none; background: transparent; }
-html[data-pt-skip="collapse"][data-pt-site="x"] article[data-pt-skipped]:not([data-pt-expanded]) { max-height: none; overflow: visible; }
-html[data-pt-skip="collapse"][data-pt-site="x"] article[data-pt-skipped]:not([data-pt-expanded]) :is([data-testid="tweetPhoto"], [data-testid="videoPlayer"], [data-testid="videoComponent"], [data-testid="card.wrapper"], [data-testid="card.layoutLarge.media"], [data-testid="card.layoutSmall.media"], [role="group"], [data-testid="tweetText"] ~ div[role="link"], [data-testid="Tweet-User-Avatar"] ~ div [data-testid="tweetText"] ~ div:has(article)) { display: none !important; }
+/* 兜底：折叠后的推文最多显示头部 + 一行正文，没被下面规则匹配到的内容一律裁掉 */
+html[data-pt-skip="collapse"][data-pt-site="x"] article[data-pt-skipped]:not([data-pt-expanded]) { max-height: 64px; overflow: hidden; }
+/* 引用推文、X 文章、链接卡片都是 div[role="link"]；媒体、操作栏一起隐藏 */
+html[data-pt-skip="collapse"][data-pt-site="x"] article[data-pt-skipped]:not([data-pt-expanded]) :is(div[role="link"], [data-testid="tweetPhoto"], [data-testid="videoPlayer"], [data-testid="videoComponent"], [data-testid^="card."], [data-testid="article-cover-image"], [data-testid="tweet-text-show-more-link"], [role="group"], [data-testid="tweetText"] ~ *, article) { display: none !important; }
 html[data-pt-skip="collapse"][data-pt-site="x"] article[data-pt-skipped]:not([data-pt-expanded]) [data-testid="tweetText"] { display: -webkit-box !important; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px !important; line-height: 1.4 !important; color: #71767b !important; }
 html[data-pt-skip="collapse"][data-pt-site="x"] article[data-pt-skipped]:not([data-pt-expanded]) [data-testid="Tweet-User-Avatar"] { transform: scale(0.55); transform-origin: top left; height: 24px !important; }
 html[data-pt-skip="collapse"][data-pt-site="x"] article[data-pt-skipped]:not([data-pt-expanded]) [data-testid="User-Name"] { font-size: 12px !important; }
