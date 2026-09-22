@@ -1,0 +1,4 @@
+node_modules/
+tests/e2e-out/
+tests/e2e-certs/
+.env

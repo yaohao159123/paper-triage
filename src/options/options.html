@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>文献分诊 · 设置</title>
+<link rel="stylesheet" href="options.css">
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <h1>文献分诊 <span class="muted">Paper Triage · Jev</span></h1>
+    <p class="muted">在 Google Scholar / arXiv / PubMed 列表页，用 TypeSafe Jev 给每条文献打上 <span class="pill follow">关注</span><span class="pill normal">普通</span><span class="pill skip">跳过</span>，跳过的整条变灰。</p>
+  </header>
+
+  <section>
+    <h2>1. 连接</h2>
+    <label>TypeSafe API Key
+      <input id="apiKey" type="password" autocomplete="off" placeholder="ts_…（只存本机 chrome.storage.local）">
+    </label>
+    <label>模型
+      <input id="model" type="text" placeholder="jev-latest">
+    </label>
+    <div class="row">
+      <button id="ping" type="button">测试连接</button>
+      <span id="pingStatus" class="status" role="status"></span>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. 研究画像 <span class="muted">（英文效果最好；一行一条）</span></h2>
+    <label>一句话概括 summary
+      <textarea id="summary" rows="3"></textarea>
+    </label>
+    <label>核心课题 core_topics
+      <textarea id="core_topics" rows="6"></textarea>
+    </label>
+    <label>方法 methods
+      <textarea id="methods" rows="5"></textarea>
+    </label>
+    <label>材料 materials
+      <textarea id="materials" rows="5"></textarea>
+    </label>
+    <label>不感兴趣 not_interested <span class="muted">（命中即判「跳过」）</span>
+      <textarea id="not_interested" rows="5"></textarea>
+    </label>
+    <div class="row"><button id="resetProfile" type="button" class="ghost">恢复默认画像</button></div>
+  </section>
+
+  <section>
+    <h2>3. 判定阈值</h2>
+    <p class="muted">Jev 给每篇文献三档概率。P(关注) ≥ followMin → 关注；否则 P(跳过) ≥ skipMin → 跳过；其余 → 普通。skipMin 越高，灰掉的越少。</p>
+    <div class="grid">
+      <label>followMin <input id="followMin" type="number" min="0" max="1" step="0.05"></label>
+      <label>skipMin <input id="skipMin" type="number" min="0" max="1" step="0.05"></label>
+      <label>每批文献数 <input id="batchSize" type="number" min="1" max="20" step="1"></label>
+    </div>
+  </section>
+
+  <section>
+    <h2>4. 缓存</h2>
+    <div class="row">
+      <span id="stats" class="status"></span>
+      <button id="clearCache" type="button" class="ghost danger">清空判读缓存</button>
+    </div>
+  </section>
+
+  <footer class="row sticky">
+    <button id="save" type="button" class="primary">保存</button>
+    <span id="saveStatus" class="status" role="status"></span>
+  </footer>
+</main>
+<script type="module" src="options.js"></script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>文献分诊</title>
+<style>
+  body { margin:0; width: 260px; font: 13px/1.5 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; color:#1f2937; }
+  .wrap { padding: 12px 14px; }
+  h1 { font-size: 14px; margin: 0 0 8px; display:flex; justify-content: space-between; align-items:center; }
+  label.toggle { display:flex; align-items:center; gap:8px; cursor:pointer; }
+  .stats { color:#6b7280; margin: 8px 0; }
+  .pill { display:inline-block; margin-right:4px; padding:0 .6em; border:1.5px solid currentColor; border-radius:999px; font-weight:600; font-size:11px; }
+  .follow{color:#2e7d32;background:#eaf5ea}.normal{color:#8a6a2b;background:#f7f1e5}.skip{color:#d32f2f;background:#fdecec}
+  button { width:100%; margin-top:6px; padding:7px 10px; border-radius:6px; border:1px solid #e5e7eb; background:#fff; font:inherit; cursor:pointer; }
+  button.primary { background:#2563eb; border-color:#2563eb; color:#fff; }
+  .status { color:#6b7280; min-height: 1.2em; margin-top:6px; }
+</style></head>
+<body><div class="wrap">
+  <h1>文献分诊 <label class="toggle"><input id="enabled" type="checkbox"> 启用</label></h1>
+  <div class="stats" id="stats">读取中…</div>
+  <button id="rerun" class="primary">本页重新判读（跳过缓存）</button>
+  <button id="options">设置：API Key · 研究画像 · 阈值</button>
+  <div class="status" id="status"></div>
+</div>
+<script src="popup.js"></script></body></html>

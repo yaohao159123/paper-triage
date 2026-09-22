@@ -1,0 +1,33 @@
+/* 文献分诊 badges: pill, 1.5px outline, tinted fill — after the user's mockups (关注 green / 普通 brown / 跳过 red) */
+.pt-badge {
+  display: inline-block;
+  box-sizing: border-box;
+  vertical-align: 2px;
+  margin: 0 0.5em 0 0;
+  padding: 0 0.7em;
+  border: 1.5px solid currentColor;
+  border-radius: 999px;
+  font: 600 12px/1.6 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", Roboto, sans-serif;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+.pt-badge:hover { opacity: 0.85; }
+.pt-badge:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+.pt-follow { color: #2e7d32; background: #eaf5ea; }
+.pt-normal { color: #8a6a2b; background: #f7f1e5; }
+.pt-skip   { color: #d32f2f; background: #fdecec; }
+.pt-loading { color: #8a8a8a; background: #f3f3f3; border-style: dashed; cursor: progress; }
+.pt-error   { color: #b45309; background: #fff4e5; }
+.pt-manual::after { content: " ✎"; font-size: 0.85em; opacity: 0.75; }
+
+/* Skipped entries: greyed but still readable on hover */
+.pt-skipped { opacity: 0.42 !important; filter: grayscale(1); transition: opacity 0.15s ease, filter 0.15s ease; }
+.pt-skipped:hover { opacity: 0.9 !important; filter: none; }
+
+/* Global off switch (popup toggle) */
+html.pt-disabled .pt-badge { display: none !important; }
+html.pt-disabled .pt-skipped { opacity: 1 !important; filter: none !important; }

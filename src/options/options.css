@@ -1,0 +1,19 @@
+:root { color-scheme: light; --fg:#1f2937; --muted:#6b7280; --line:#e5e7eb; --bg:#fafafa; --accent:#2563eb; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.6 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif; }
+.wrap { max-width: 760px; margin: 0 auto; padding: 24px 20px 96px; }
+h1 { font-size: 22px; margin: 0 0 4px; } h2 { font-size: 15px; margin: 0 0 10px; }
+.muted { color: var(--muted); font-weight: 400; font-size: 13px; }
+section { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin: 16px 0; }
+label { display: block; margin: 10px 0; font-weight: 600; }
+input[type=text], input[type=password], input[type=number], textarea { display: block; width: 100%; margin-top: 4px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; font: inherit; font-weight: 400; background: #fff; }
+textarea { resize: vertical; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+button { padding: 7px 14px; border-radius: 6px; border: 1px solid var(--line); background: #fff; font: inherit; cursor: pointer; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.ghost { background: transparent; } button.danger { color: #b91c1c; }
+.status { color: var(--muted); } .status.ok { color: #15803d; } .status.err { color: #b91c1c; }
+.sticky { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 20px; background: #fff; border-top: 1px solid var(--line); justify-content: center; }
+.pill { display: inline-block; margin: 0 3px; padding: 0 0.7em; border: 1.5px solid currentColor; border-radius: 999px; font: 600 12px/1.6 inherit; }
+.pill.follow { color:#2e7d32; background:#eaf5ea; } .pill.normal { color:#8a6a2b; background:#f7f1e5; } .pill.skip { color:#d32f2f; background:#fdecec; }
