@@ -62,13 +62,38 @@ async function start() {
   document.addEventListener('dblclick', onDoubleClick, true);
   document.addEventListener('keydown', onKey);
   await scan();
+  let quickScheduled = false;
   new MutationObserver((muts) => {
     const relevant = muts.some((m) => [...m.addedNodes].some((n) => n.nodeType === 1 && !n.closest?.(`.${BADGE_CLASS}, .pt-toolbar, .pt-review, .pt-reasons, .pt-run`)));
-    if (relevant) {
-      clearTimeout(timer);
-      timer = setTimeout(() => scan(), 600);
+    if (!relevant) return;
+    // Virtualised feeds (X, 小红书) re-mount items on scroll: re-apply known verdicts right away, no round trip.
+    if (!quickScheduled) {
+      quickScheduled = true;
+      requestAnimationFrame(() => { quickScheduled = false; quickApply(); });
     }
+    clearTimeout(timer);
+    timer = setTimeout(() => scan(), 150);
   }).observe(document.body, { childList: true, subtree: true });
+}
+
+/** Re-render entries that re-appeared without our marks but whose verdict we already hold. */
+function quickApply() {
+  let touched = false;
+  for (const e of adapter.findEntries(document)) {
+    if (e.containers[0].dataset.ptKey) continue;
+    const paper = normalizePaper(e.paper);
+    const rec = (byKey.get(paper.key) || []).find((r) => r.verdict);
+    if (!rec) continue;
+    e.paper = paper;
+    e.key = paper.key;
+    e.badgeAfter = e.mount.querySelector(':scope > .descriptor');
+    for (const c of e.containers) c.dataset.ptKey = paper.key;
+    register(e);
+    for (const r of byKey.get(e.key)) if (r.entry === e) r.verdict = rec.verdict;
+    renderBadge(e, { state: 'verdict', verdict: rec.verdict, reasonLabels: display.reasons === false ? null : LABELS_FOR_REASONS });
+    touched = true;
+  }
+  if (touched) afterLayout();
 }
 
 /** Apply a display change locally right away, then persist it (other tabs pick it up via storage.onChanged). */
@@ -109,6 +134,21 @@ async function scan(opts = {}) {
       entries.push(e);
     }
     if (!entries.length) return;
+    if (!force && !only) {
+      // entries whose verdict we already hold (re-mounted by a virtualised feed) need no round trip
+      const fresh = [];
+      for (const e of entries) {
+        const rec = (byKey.get(e.key) || []).find((r) => r.verdict);
+        if (rec && !all) {
+          register(e);
+          for (const r of byKey.get(e.key)) if (r.entry === e) r.verdict = rec.verdict;
+          renderBadge(e, { state: 'verdict', verdict: rec.verdict, reasonLabels: display.reasons === false ? null : LABELS_FOR_REASONS });
+        } else fresh.push(e);
+      }
+      entries.length = 0;
+      entries.push(...fresh);
+      if (!entries.length) { afterLayout(); return; }
+    }
     if (!toolbar && entries.some((e) => !e.single)) {
       toolbar = mountToolbar(document, {
         onRerun: () => scan({ all: true, force: true }),

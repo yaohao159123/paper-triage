@@ -8,6 +8,12 @@
 | 模型实测 | `npm run eval -- --scholar` / `--tweets` / `--xhs` | 文献：12 条人工标注 + Scholar 夹具 10 篇；推文：12 条人工标注（4 关注 / 3 普通 / 5 跳过） | `TYPESAFE_API_KEY`（环境变量或 `~/.claude/settings.json` 的 env） |
 | 端到端 | `npm run e2e`（加 `--headed` 可视） | 在 Playwright 自带 Chrome for Testing 里加载扩展，把 Scholar / arXiv（列表 + 单篇）/ PubMed / X 域名映射到本地 HTTPS 夹具，真实调用 Jev，断言徽章数 / 无错误 / 灰化数 / 工具条计数与「隐藏跳过」筛选 / 单篇页不灰化无工具条，验证点击改判与 ⌥ 恢复，截图到 `tests/e2e-out/` | Chromium 1208、openssl、API Key |
 
+## 2026-09-22 结果（0.4.1）
+
+- 单元：49 / 49（新增：X 适配器返回 [article, cell] 两层容器；集成测试模拟虚拟列表重新挂载，验证本地判定即时套用且不发新的 Jev 请求）。
+- 端到端：X 夹具改为绝对定位的 `cellInnerDiv` 格子，隐藏模式下格子整体 display:none。
+- 未能在真实登录态的 X 上复现用户报告的「隐藏不了」，以上为按 X 真实 DOM 结构推断的两处修复，待用户确认。
+
 ## 2026-09-22 结果（0.4.0）
 
 - 单元：48 / 48 通过（新增：小红书适配器（信息流 + 笔记弹层）、小红书域的 state / questions / 缓存命名空间、瀑布流重排（transform 与 left/top 两种、还原、非 JS 网格不动）、每站点跳过模式优先级、推广判跳过策略）。

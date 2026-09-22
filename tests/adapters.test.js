@@ -127,6 +127,8 @@ test('x: timeline tweets with ids, author, quoted text; media-only tweets skippe
   assert.equal(a.paper.year, '2026');
   assert.equal(a.mount.getAttribute('data-testid'), 'tweetText');
   assert.equal(a.containers[0].tagName, 'ARTICLE');
+  assert.equal(a.containers.length, 2, 'article + its virtual-list cell');
+  assert.equal(a.containers[1].getAttribute('data-testid'), 'cellInnerDiv');
   assert.match(b.paper.abstract, /🔥$/, 'emoji image alt restored');
   assert.equal(c.paper.quotedText, 'Quoted: Hybrit pilot data thread');
   assert.doesNotMatch(c.paper.abstract, /Quoted:/, 'main text excludes the quoted tweet');

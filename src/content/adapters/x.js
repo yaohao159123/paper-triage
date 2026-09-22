@@ -21,9 +21,12 @@ export const xAdapter = {
       const handle = [...(userName?.querySelectorAll('span') || [])].map((s) => s.textContent.trim()).find((t) => /^@\w+$/.test(t)) || (m ? `@${m[1]}` : '');
       const quoted = [...art.querySelectorAll('[data-testid="tweetText"]')].slice(1).map(tweetText).filter(Boolean)[0] || '';
       const when = art.querySelector('time[datetime]')?.getAttribute('datetime') || '';
+      // The timeline is a virtual list: each article sits in an absolutely positioned cell. Hide/grey the cell too,
+      // otherwise the cell keeps its slot. The article stays first so run markers land inside the cell.
+      const cell = art.closest('[data-testid="cellInnerDiv"]');
       out.push({
         id: m ? m[2] : text,
-        containers: [art],
+        containers: cell && cell !== art ? [art, cell] : [art],
         mount: textEl,
         paper: {
           source: 'x',

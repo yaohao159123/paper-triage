@@ -81,6 +81,9 @@ html.pt-disabled [data-pt-key] { display: revert !important; }
 html.pt-disabled.pt-skip-collapse .pt-skipped :is(.gs_a, .gs_rs, .gs_fl, .gs_ggs, .list-authors, .list-comments, .list-subjects, p, .docsum-citation, .full-view-snippet) { display: revert !important; }
 
 /* ===== X / Twitter：跳过的推文折叠成一行（头像缩小、媒体与操作栏隐藏、正文一行截断） ===== */
+html.pt-skip-hide.pt-site-x [data-testid="cellInnerDiv"].pt-skipped { display: none !important; }
+html.pt-skip-collapse.pt-site-x [data-testid="cellInnerDiv"].pt-skipped:not(.pt-expanded) { opacity: 1; filter: none; }
+html.pt-site-x [data-testid="cellInnerDiv"].pt-follow-item { box-shadow: none; background: transparent; }
 html.pt-skip-collapse.pt-site-x article.pt-skipped:not(.pt-expanded) { max-height: none; overflow: visible; }
 html.pt-skip-collapse.pt-site-x article.pt-skipped:not(.pt-expanded) :is([data-testid="tweetPhoto"], [data-testid="videoPlayer"], [data-testid="videoComponent"], [data-testid="card.wrapper"], [data-testid="card.layoutLarge.media"], [data-testid="card.layoutSmall.media"], [role="group"], [data-testid="tweetText"] ~ div[role="link"], [data-testid="Tweet-User-Avatar"] ~ div [data-testid="tweetText"] ~ div:has(article)) { display: none !important; }
 html.pt-skip-collapse.pt-site-x article.pt-skipped:not(.pt-expanded) [data-testid="tweetText"] { display: -webkit-box !important; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px !important; line-height: 1.4 !important; color: #71767b !important; }

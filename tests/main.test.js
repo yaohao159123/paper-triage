@@ -103,3 +103,20 @@ test('content script: scan → verdict badges → toolbar counts → filters →
   assert.equal(sent.at(-1).force, true);
   assert.equal(sent.at(-1).items.length, 10);
 });
+
+test('virtualised re-mount: a result re-inserted without marks gets its verdict back without a new triage request', async () => {
+  const before = sent.filter((m) => m.type === 'triage').length;
+  const first = document.querySelector('.gs_r[data-pt-key]');
+  const key = first.dataset.ptKey;
+  const label = first.dataset.ptLabel;
+  const clone = first.cloneNode(true);
+  for (const el of [clone, ...clone.querySelectorAll('[data-pt-key]')]) { delete el.dataset.ptKey; delete el.dataset.ptLabel; el.classList.remove('pt-skipped', 'pt-follow-item'); }
+  clone.querySelector('.pt-badge')?.remove();
+  clone.querySelector('.pt-reasons')?.remove();
+  first.remove();
+  document.querySelector('#gs_res_ccl_mid').prepend(clone);
+  await until(() => clone.dataset.ptKey === key && clone.querySelector('.pt-badge[data-pt-state="verdict"]'));
+  assert.equal(clone.dataset.ptLabel, label);
+  await sleep(300);
+  assert.equal(sent.filter((m) => m.type === 'triage').length, before, 'no extra Jev round trip for a known key');
+});
